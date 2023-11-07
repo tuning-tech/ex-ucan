@@ -11,8 +11,6 @@ defmodule Ucan.Core.Token do
   alias Ucan.Keymaterial.Ed25519.Keypair
   alias Ucan.Core.Structs.UcanRaw
 
-
-
   @token_type "JWT"
   @version %{major: 0, minor: 10, patch: 0}
 
