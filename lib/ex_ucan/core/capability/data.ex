@@ -65,7 +65,9 @@ defmodule Ucan.Core.Capabilities do
   def sequence_to_map(capabilites) do
     capabilites
     |> Enum.reduce(%{}, fn %Capability{} = cap, caps ->
-      Map.put(caps, cap.resource, %{cap.ability => cap.caveats})
+      Map.update(caps, cap.resource, %{cap.ability => cap.caveats}, fn val ->
+        Map.put(val, cap.ability, cap.caveats)
+      end)
     end)
   end
 
