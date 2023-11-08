@@ -3,7 +3,7 @@ defmodule CapabilityTest do
   alias Ucan.Core.Capability
   use ExUnit.Case
 
-  @tag :caps
+  @tag :caps_2
   test "can_cast_between_map_and_sequence" do
     cap_foo = Capability.new("example//foo", "ability/foo", [%{}])
     assert cap_foo.caveats == [%{}]
@@ -13,15 +13,6 @@ defmodule CapabilityTest do
 
     cap_maps = Capabilities.sequence_to_map(cap_sequence)
     assert Capabilities.map_to_sequence(cap_maps) == cap_sequence
-
-    # {:ok, caps} = Capabilities.from(%{
-    #   "example://bar" => %{
-    #     "ability/bar" => [%{}],
-    #     "ability/foo" => [%{}]
-    #   }
-    # })
-
-    # Capabilities.map_to_sequence(caps)
   end
 
   @tag :caps
@@ -88,30 +79,33 @@ defmodule CapabilityTest do
 
   @tag :caps
   test "it_filters_out_empty_caveats_while_creating_map_to_sequence" do
-    assert {:ok, capabilities} = Capabilities.from(%{
-      "example://bar" => %{"ability/bar" => [%{}]},
-      "example://foo" => %{"ability/foo" => []}
-    })
+    assert {:ok, capabilities} =
+             Capabilities.from(%{
+               "example://bar" => %{"ability/bar" => [%{}]},
+               "example://foo" => %{"ability/foo" => []}
+             })
 
     cap_seq = Capabilities.map_to_sequence(capabilities)
     assert length(cap_seq) == 1
   end
 
-  # @tag :caps
-  # test "map_to_sequence with multiple abilities for a resource" do
-  #   assert {:ok, capabilities} = Capabilities.from(%{
-  #     "example://bar" => %{"ability/bar" => [%{}], "ability/foo" => [%{}]}
-  #   })
+  @tag :caps
+  test "map_to_sequence with multiple abilities for a resource" do
+    assert {:ok, capabilities} =
+             Capabilities.from(%{
+               "example://bar" => %{"ability/bar" => [%{}], "ability/foo" => [%{}]}
+             })
 
-  #   assert [_|_] = Capabilities.map_to_sequence(capabilities)
-  # end
+    assert [_ | _] = Capabilities.map_to_sequence(capabilities)
+  end
 
   @tag :caps
   test "sequence_to_map with multiple abilities for a resource" do
     cap_1 = Capability.new("example://bar", "ability/bar", %{})
     cap_2 = Capability.new("example://bar", "ability/foo", %{})
 
-    assert %{"example://bar" => %{"ability/bar" => %{}, "ability/foo" => %{}}} = Capabilities.sequence_to_map([cap_1, cap_2])
+    assert %{"example://bar" => %{"ability/bar" => %{}, "ability/foo" => %{}}} =
+             Capabilities.sequence_to_map([cap_1, cap_2])
   end
 
   @tag :caps
@@ -119,6 +113,7 @@ defmodule CapabilityTest do
     cap_1 = Capability.new("example://bar", "ability/bar", %{})
     cap_2 = Capability.new("example://bar", "ability/bar", %{})
 
-    assert %{"example://bar" => %{"ability/bar" => %{}}} = Capabilities.sequence_to_map([cap_1, cap_2])
+    assert %{"example://bar" => %{"ability/bar" => %{}}} =
+             Capabilities.sequence_to_map([cap_1, cap_2])
   end
 end

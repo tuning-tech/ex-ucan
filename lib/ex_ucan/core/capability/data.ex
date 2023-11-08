@@ -46,13 +46,16 @@ defmodule Ucan.Core.Capabilities do
   @spec map_to_sequence(map()) :: list(Capability.t())
   def map_to_sequence(capabilities) do
     capabilities
-    |> Enum.reduce([], fn {resource, ability}, caps ->
-      [{ability, caveats}] = Map.to_list(ability)
-      if length(caveats) >= 1 do
-        caps ++ [Capability.new(resource, ability, caveats)]
-      else
-        caps
-      end
+    |> Enum.reduce([], fn {resource, abilities}, caps ->
+      (caps ++
+         Enum.map(abilities, fn {ability, caveats} ->
+           if length(caveats) >= 1 do
+             Capability.new(resource, ability, caveats)
+           else
+             nil
+           end
+         end))
+      |> Enum.filter(fn val -> val != nil end)
     end)
   end
 
