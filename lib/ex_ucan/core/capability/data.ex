@@ -1,4 +1,4 @@
-defmodule Ucan.Core.Capability do
+defmodule Ucan.Capability do
   @moduledoc """
   Capabilities are a list of `resources`, and the `abilities` that we
   can make on the `resource` with some optional `caveats`.
@@ -25,7 +25,7 @@ defmodule Ucan.Core.Capability do
   end
 end
 
-defmodule Ucan.Core.Capabilities do
+defmodule Ucan.Capabilities do
   @moduledoc """
   Handling conversions of different type of group of capabilities
 
@@ -33,7 +33,7 @@ defmodule Ucan.Core.Capabilities do
 
   type reference - map<String: map<String: list()>>
   """
-  alias Ucan.Core.Capability
+  alias Ucan.Capability
 
   @doc """
   Convert capabilites represented in maps to list of capabilites
