@@ -35,27 +35,23 @@ defmodule Ucan.Core.Capabilities do
   """
   alias Ucan.Core.Capability
 
-  # TODO: I think we are not taking into account of the possiblity
-  # of having multiple abilities per resource here....
-
   @doc """
   Convert capabilites represented in maps to list of capabilites
 
+  Will ignore capabilities with empty caveats
   See `/test/capability_test.exs`
   """
   @spec map_to_sequence(map()) :: list(Capability.t())
   def map_to_sequence(capabilities) do
-    capabilities
-    |> Enum.reduce([], fn {resource, abilities}, caps ->
-      (caps ++
-         Enum.map(abilities, fn {ability, caveats} ->
-           if length(caveats) >= 1 do
-             Capability.new(resource, ability, caveats)
-           else
-             nil
-           end
-         end))
-      |> Enum.filter(fn val -> val != nil end)
+    Enum.reduce(capabilities, [], fn {resource, abilities}, caps ->
+      caps ++
+        Enum.reduce(abilities, [], fn
+          {ability, caveats}, cap_list when length(caveats) >= 1 ->
+            cap_list ++ [Capability.new(resource, ability, caveats)]
+
+          {_ability, _caveats}, cap_list ->
+            cap_list
+        end)
     end)
   end
 
@@ -74,7 +70,9 @@ defmodule Ucan.Core.Capabilities do
     end)
   end
 
-  # TODO: docs
+  @doc """
+  Create Capabilities map from json or map, which does the validation too
+  """
   @spec from(String.t() | map()) :: map()
   def from(value) when is_binary(value) do
     with {:ok, val} <- Jason.decode(value),
