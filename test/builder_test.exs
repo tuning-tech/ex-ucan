@@ -1,6 +1,6 @@
 defmodule BuilderTest do
   alias Ucan.Builder
-  alias Ucan.Core.Capability
+  alias Ucan.Capability
   alias Ucan.Core.Structs.UcanPayload
   use ExUnit.Case
 
