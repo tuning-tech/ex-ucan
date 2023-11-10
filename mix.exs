@@ -3,7 +3,7 @@ defmodule ExUcan.MixProject do
 
   def project do
     [
-      app: :ex_ucan,
+      app: :ucan,
       version: "0.1.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
@@ -37,7 +37,8 @@ defmodule ExUcan.MixProject do
   defp deps do
     [
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:b58, "~> 1.0.2"}
+      {:b58, "~> 1.0.2"},
+      {:excid, "~> 1.0.1"}
     ]
   end
 
