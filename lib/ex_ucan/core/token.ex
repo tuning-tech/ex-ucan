@@ -2,16 +2,14 @@ defmodule Ucan.Core.Token do
   @moduledoc """
   Core functions for the creation and management of UCAN tokens
   """
-  alias Ucan.Core.Structs.UcanPayload
   alias Ucan.Builder
   alias Ucan.Core.Structs.UcanHeader
+  alias Ucan.Core.Structs.UcanPayload
+  alias Ucan.Core.Structs.UcanRaw
   alias Ucan.Core.Utils
   alias Ucan.Keymaterial
   alias Ucan.Keymaterial.Ed25519.Crypto
   alias Ucan.Keymaterial.Ed25519.Keypair
-  alias Ucan.Core.Structs.UcanRaw
-
-
 
   @token_type "JWT"
   @version %{major: 0, minor: 10, patch: 0}

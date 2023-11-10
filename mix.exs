@@ -8,6 +8,7 @@ defmodule ExUcan.MixProject do
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      aliases: aliases(),
       test_coverage: [
         summary: [
           threshold: 80
@@ -28,6 +29,10 @@ defmodule ExUcan.MixProject do
     ]
   end
 
+  def cli() do
+    [preferred_envs: [sanity: :test]]
+  end
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
@@ -35,4 +40,11 @@ defmodule ExUcan.MixProject do
       {:b58, "~> 1.0.2"}
     ]
   end
+
+  defp aliases() do
+    [
+      sanity: ["test", "format", "credo --strict"]
+    ]
+  end
+
 end
