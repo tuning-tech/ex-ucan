@@ -8,7 +8,7 @@
 
 > Ucan version - v0.10.0
 
-**⚠️ WARNING ⚠️:  Library is not ready for production use, and is under development.**
+**⚠️ WARNING ⚠️: This library is experimental and will likely have many breaking changes in the future!.**
 
 ## Table of Contents
 
