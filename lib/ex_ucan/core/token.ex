@@ -101,6 +101,14 @@ defmodule Ucan.Core.Token do
     }
   end
 
+  @doc """
+  Converts a give Raw UCAN to Cid, hashed by the given hash
+  """
+  @spec to_cid(UcanRaw.t(), Builder.hash_type()) :: {:ok, String.t()} | {:error, Stirng.t()}
+  def to_cid(ucan, hash_type) do
+    Cid.cid(ucan, hash_type)
+  end
+
   @spec encode_ucan_parts(UcanHeader.t() | UcanPayload.t()) :: String.t()
   defp encode_ucan_parts(data) do
     data

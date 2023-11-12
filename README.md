@@ -75,7 +75,7 @@ Peer-to-peer
 ```elixir
 def deps do
   [
-    {:ex_ucan, git: "https://github.com/spawnfest/youcan.git"}
+    {:ucan, git: "https://github.com/spawnfest/youcan.git"}
   ]
 end
 ```
