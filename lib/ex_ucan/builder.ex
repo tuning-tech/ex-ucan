@@ -2,10 +2,16 @@ defmodule Ucan.Builder do
   @moduledoc """
   Builder functions for UCAN tokens
   """
+  require Logger
+  alias Ucan.Core.Structs.UcanRaw
   alias Ucan.Core.Capability
   alias Ucan.Core.Structs.UcanPayload
   alias Ucan.Core.Token
   alias Ucan.Keymaterial.Ed25519.Keypair
+
+  # @type hash_type :: :sha1 | :sha2_256 | :sha2_512 | :sha3 | :blake2b | :blake2s | :blake3
+
+  @type hash_type :: :sha2_256 | :blake3
 
   @type t :: %__MODULE__{
           issuer: Keypair,
@@ -114,6 +120,27 @@ defmodule Ucan.Builder do
   @spec with_nonce(__MODULE__.t()) :: __MODULE__.t()
   def with_nonce(builder) do
     %{builder | add_nonce?: true}
+  end
+
+  @doc """
+  Includes a UCAN in the list of proofs for the UCAN to be built.
+  Note that the proof's audience must match this UCAN's issuer
+  or else the proof chain will be invalidated!
+  The proof is encoded into a [Cid], hashed with given hash (blake3 by default)
+  algorithm, unless one is provided.
+  """
+  @spec witnessed_by(__MODULE__.t(), UcanRaw.t(), hash_type()) :: __MODULE__.t()
+  def witnessed_by(builder, authority_ucan, hash_type \\ :blake3)
+
+  def witnessed_by(builder, %UcanRaw{} = authority_ucan, hash_type) do
+    case Token.to_cid(authority_ucan, hash_type) do
+      {:ok, cid} ->
+        %{builder | proofs: [cid | builder.proofs]}
+
+      {:error, error} ->
+        Logger.warning("Failed to add authority to proofs: #{error}")
+        builder
+    end
   end
 
   @doc """

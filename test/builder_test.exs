@@ -118,4 +118,57 @@ defmodule BuilderTest do
 
     assert %RuntimeError{message: _} = res
   end
+
+  @tag :build_witness
+  test "with witnessed_by", meta do
+    cap = Capability.new("example://bar", "ability/bar", %{"beep" => 1})
+
+    authority_token =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.build!()
+      |> Ucan.sign(meta.keypair)
+
+    # Valid witnessed by addition
+    {:ok, %UcanPayload{prf: proofs}} =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.claiming_capability(cap)
+      |> Builder.witnessed_by(authority_token)
+      |> Builder.build()
+
+    assert length(proofs) == 1
+
+    # Auhotrity token is not a valid UCANRaw
+    res =
+      try do
+        Builder.default()
+        |> Builder.issued_by(meta.keypair)
+        |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+        |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+        |> Builder.claiming_capability(cap)
+        |> Builder.witnessed_by("")
+        |> Builder.build()
+      rescue
+        e -> IO.inspect(e)
+      end
+
+    assert %FunctionClauseError{} = res
+
+    # Invalid cid conversion, due to unspported hash type
+    {:ok, %UcanPayload{prf: proofs}} =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.claiming_capability(cap)
+      |> Builder.witnessed_by(authority_token, :md5)
+      |> Builder.build()
+
+    refute length(proofs) == 1
+  end
 end

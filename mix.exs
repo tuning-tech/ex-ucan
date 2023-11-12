@@ -38,7 +38,7 @@ defmodule ExUcan.MixProject do
     [
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:b58, "~> 1.0.2"},
-      {:excid, "~> 1.0.1"}
+      {:excid, git: "https://github.com/madclaws/cid.git"}
     ]
   end
 
