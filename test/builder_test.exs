@@ -154,7 +154,7 @@ defmodule BuilderTest do
         |> Builder.witnessed_by("")
         |> Builder.build()
       rescue
-        e -> IO.inspect(e)
+        e -> e
       end
 
     assert %FunctionClauseError{} = res

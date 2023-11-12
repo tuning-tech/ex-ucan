@@ -3,9 +3,9 @@ defmodule Ucan.Builder do
   Builder functions for UCAN tokens
   """
   require Logger
-  alias Ucan.Core.Structs.UcanRaw
   alias Ucan.Core.Capability
   alias Ucan.Core.Structs.UcanPayload
+  alias Ucan.Core.Structs.UcanRaw
   alias Ucan.Core.Token
   alias Ucan.Keymaterial.Ed25519.Keypair
 
