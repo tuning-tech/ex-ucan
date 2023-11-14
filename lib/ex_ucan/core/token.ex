@@ -112,6 +112,18 @@ defmodule Ucan.Core.Token do
     Cid.cid(ucan, hash_type)
   end
 
+  @doc """
+  Converts a give Raw UCAN to Cid, hashed by the given hash
+
+  A runtime exception is raised if build payloads fails.
+  """
+  def to_cid!(ucan, hash_type) do
+    case Cid.cid(ucan, hash_type) do
+      {:ok, cid} -> cid
+      {:error, err} -> raise err
+    end
+  end
+
   @spec encode_ucan_parts(UcanHeader.t() | UcanPayload.t()) :: String.t()
   defp encode_ucan_parts(data) do
     data

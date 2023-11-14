@@ -1,4 +1,5 @@
 defmodule BuilderTest do
+  alias Ucan.Core.Token
   alias Ucan.Builder
   alias Ucan.Capabilities
   alias Ucan.Capability
@@ -10,7 +11,9 @@ defmodule BuilderTest do
   setup do
     keypair = Ucan.create_default_keypair()
     bob_keypair = Ucan.create_default_keypair()
-    %{keypair: keypair, bob_keypair: bob_keypair}
+    mallory_keypair = Ucan.create_default_keypair()
+
+    %{keypair: keypair, bob_keypair: bob_keypair, mallory_keypair: mallory_keypair}
   end
 
   @tag :build
@@ -225,6 +228,48 @@ defmodule BuilderTest do
 
     {:ok, expected_attenuations} = Capabilities.sequence_to_map([cap_1, cap_2])
     assert payload.cap == expected_attenuations
-    # Add tests for attenuations
+  end
+
+  # TODO: What is None caveat in rust, how are they converting that to Capabilities
+  @tag :build_rs
+  test "it_builds_with_lifetime_in_seconds", meta do
+    token =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(300)
+      |> Builder.build!()
+
+    %UcanRaw{payload: %UcanPayload{} = payload} = _ucan = Ucan.sign(token, meta.keypair)
+    assert payload.exp > (DateTime.utc_now() |> DateTime.to_unix()) + 290
+  end
+
+  @tag :build_rs
+  test "it_prevents_duplicate_proofs", meta do
+    parent_cap = Capability.new("wnfs://alice.fission.name/public", "wnfs/super_user", %{})
+
+    ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(30)
+      |> Builder.claiming_capability(parent_cap)
+      |> Builder.build!()
+      |> Ucan.sign(meta.keypair)
+
+    attenuated_cap_1 = Capability.new("wnfs://alice.fission.name/public/Apps", "wnfs/create", %{})
+    attenuated_cap_2 = Capability.new("wnfs://alice.fission.name/public/Domains", "wnfs/create", %{})
+
+    next_ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.bob_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.mallory_keypair))
+      |> Builder.with_lifetime(30)
+      |> Builder.witnessed_by(ucan)
+      |> Builder.claiming_capability(attenuated_cap_1)
+      |> Builder.claiming_capability(attenuated_cap_2)
+      |> Builder.build!()
+      |> Ucan.sign(meta.keypair)
+    assert next_ucan.payload.prf == [Token.to_cid!(ucan, :blake3)]
   end
 end
