@@ -8,6 +8,8 @@ defmodule Ucan.Capability do
           ability: String.t(),
           caveats: list(map())
         }
+
+  @derive Jason.Encoder
   defstruct [:resource, :ability, :caveats]
 
   @doc """
@@ -60,20 +62,21 @@ defmodule Ucan.Capabilities do
 
   See `/test/capability_test.exs`
   """
-  @spec sequence_to_map(list(Capability.t())) :: map()
+  @spec sequence_to_map(list(Capability.t())) :: {:ok, map()} | {:error, String.t()}
   def sequence_to_map(capabilites) do
     capabilites
     |> Enum.reduce(%{}, fn %Capability{} = cap, caps ->
-      Map.update(caps, cap.resource, %{cap.ability => cap.caveats}, fn val ->
-        Map.put(val, cap.ability, cap.caveats)
+      Map.update(caps, cap.resource, %{cap.ability => transform_caveats(cap.caveats)}, fn val ->
+        Map.put(val, cap.ability, transform_caveats(cap.caveats))
       end)
     end)
+    |> validate_resources()
   end
 
   @doc """
   Create Capabilities map from json or map, which does the validation too
   """
-  @spec from(String.t() | map()) :: map()
+  @spec from(String.t() | map()) :: {:ok, map()} | {:error, String.t()}
   def from(value) when is_binary(value) do
     with {:ok, val} <- Jason.decode(value),
          {true, _} <- {is_map(val), "Capabilities must be a map"} do
@@ -92,6 +95,8 @@ defmodule Ucan.Capabilities do
   def from(_), do: {:error, "Capabilities must be a map"}
 
   @spec validate_resources(map()) :: {:ok, map()} | {:error, String.t()}
+  defp validate_resources(value) when value == %{}, do: {:ok, value}
+
   defp validate_resources(value) do
     value
     |> Enum.reduce_while(%{}, fn {_resource, ability}, _resource_new ->
@@ -120,4 +125,8 @@ defmodule Ucan.Capabilities do
       end
     end)
   end
+
+  @spec transform_caveats(any()) :: list()
+  defp transform_caveats(caveats) when is_list(caveats), do: caveats
+  defp transform_caveats(caveats), do: [caveats]
 end

@@ -1,12 +1,16 @@
 defmodule BuilderTest do
   alias Ucan.Builder
+  alias Ucan.Capabilities
   alias Ucan.Capability
   alias Ucan.Core.Structs.UcanPayload
+  alias Ucan.Core.Structs.UcanRaw
+  alias Ucan.Keymaterial
   use ExUnit.Case
 
   setup do
     keypair = Ucan.create_default_keypair()
-    %{keypair: keypair}
+    bob_keypair = Ucan.create_default_keypair()
+    %{keypair: keypair, bob_keypair: bob_keypair}
   end
 
   @tag :build
@@ -83,7 +87,7 @@ defmodule BuilderTest do
              |> Builder.claiming_capability(cap)
              |> Builder.build()
 
-    assert [%{resource: "example://bar", ability: "ability/bar"} | _] = caps
+    assert %{"example://bar" => %{"ability/bar" => [%{"beep" => 1}]}} = caps
   end
 
   @tag :build
@@ -98,7 +102,7 @@ defmodule BuilderTest do
              |> Builder.claiming_capability(cap)
              |> Builder.build!()
 
-    assert [%{resource: "example://bar", ability: "ability/bar"} | _] = caps
+    assert %{"example://bar" => %{"ability/bar" => [%{"beep" => 1}]}} = caps
   end
 
   @tag :build
@@ -119,7 +123,7 @@ defmodule BuilderTest do
     assert %RuntimeError{message: _} = res
   end
 
-  @tag :build_witness
+  @tag :build_witness_ins
   test "with witnessed_by", meta do
     cap = Capability.new("example://bar", "ability/bar", %{"beep" => 1})
 
@@ -170,5 +174,57 @@ defmodule BuilderTest do
       |> Builder.build()
 
     refute length(proofs) == 1
+  end
+
+  # Tests from rs-ucan
+  @tag :build_rs
+  test "it_builds_with_a_simple_example", meta do
+    fact_1 = %{
+      "test" => true
+    }
+
+    fact_2 = %{
+      "preimage" => "abc",
+      "hash" => "sth"
+    }
+
+    cap_1 = Capability.new("mailto:alice@gmail.com", "email/send", [])
+
+    cap_2 = Capability.new("wnfs://alice.fission.name/public", "wnfs/super_user", [])
+
+    expiration = (DateTime.utc_now() |> DateTime.to_unix()) + 30
+    not_before = (DateTime.utc_now() |> DateTime.to_unix()) - 30
+
+    token =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_expiration(expiration)
+      |> Builder.not_before(not_before)
+      |> Builder.with_fact("abc/challenge", fact_1)
+      |> Builder.with_fact("def/challenge", fact_2)
+      |> Builder.claiming_capability(cap_1)
+      |> Builder.claiming_capability(cap_2)
+      |> Builder.with_nonce()
+      |> Builder.build!()
+
+    %UcanRaw{payload: %UcanPayload{} = payload} = _ucan = Ucan.sign(token, meta.keypair)
+    assert payload.iss == Keymaterial.get_did(meta.keypair)
+    assert payload.aud == Keymaterial.get_did(meta.bob_keypair)
+    assert is_integer(payload.exp)
+    assert payload.exp == expiration
+    assert is_integer(payload.nbf)
+    assert payload.nbf == not_before
+
+    assert payload.fct == %{
+             "abc/challenge" => fact_1,
+             "def/challenge" => fact_2
+           }
+
+    assert is_binary(payload.nnc)
+
+    {:ok, expected_attenuations} = Capabilities.sequence_to_map([cap_1, cap_2])
+    assert payload.cap == expected_attenuations
+    # Add tests for attenuations
   end
 end

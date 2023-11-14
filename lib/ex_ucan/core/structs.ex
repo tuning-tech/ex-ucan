@@ -20,7 +20,7 @@ defmodule Ucan.Core.Structs.UcanPayload do
   @moduledoc """
   Ucan Payload representation
   """
-  alias Ucan.Core.Capability
+  alias Ucan.Capabilities
 
   @typedoc """
 
@@ -43,7 +43,7 @@ defmodule Ucan.Core.Structs.UcanPayload do
           exp: integer(),
           nnc: String.t(),
           fct: map(),
-          cap: list(Capability.t()),
+          cap: Capabilities,
           prf: list(String.t())
         }
 

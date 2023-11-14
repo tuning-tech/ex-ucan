@@ -218,6 +218,7 @@ The library is no-where feature parity with ucan [rust](https://github.com/ucan-
 But good thing is we have now laid the basic foundations. The next immediate additions would be,
 
 - [X] Proof encodings as CID (Content Addressable Data)
+- [ ] Capability Semantics
 - [ ] `delegating_from` in builder 
 - [ ] Verifying UCAN invocations
 

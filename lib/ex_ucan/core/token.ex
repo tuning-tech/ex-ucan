@@ -3,6 +3,7 @@ defmodule Ucan.Core.Token do
   Core functions for the creation and management of UCAN tokens
   """
   alias Ucan.Builder
+  alias Ucan.Capabilities
   alias Ucan.Core.Structs.UcanHeader
   alias Ucan.Core.Structs.UcanPayload
   alias Ucan.Core.Structs.UcanRaw
@@ -30,7 +31,8 @@ defmodule Ucan.Core.Token do
     did = Keymaterial.get_did(params.issuer)
 
     with {:iss, true} <- {:iss, String.starts_with?(did, "did")},
-         {:aud, true} <- {:aud, String.starts_with?(params.audience, "did")} do
+         {:aud, true} <- {:aud, String.starts_with?(params.audience, "did")},
+         {:ok, caps} <- Capabilities.sequence_to_map(params.capabilities) do
       current_time_in_seconds = DateTime.utc_now() |> DateTime.to_unix()
       exp = params.expiration || current_time_in_seconds + params.lifetime
 
@@ -43,12 +45,13 @@ defmodule Ucan.Core.Token do
          exp: exp,
          nnc: add_nonce(params.add_nonce? || false),
          fct: params.facts,
-         cap: params.capabilities,
+         cap: caps,
          prf: params.proofs
        }}
     else
       {:iss, false} -> {:error, "The issuer must be a DID"}
       {:aud, false} -> {:error, "The audience must be a DID"}
+      {:error, reason} -> {:error, reason}
     end
   end
 
