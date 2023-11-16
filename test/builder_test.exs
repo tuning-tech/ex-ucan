@@ -258,7 +258,9 @@ defmodule BuilderTest do
       |> Ucan.sign(meta.keypair)
 
     attenuated_cap_1 = Capability.new("wnfs://alice.fission.name/public/Apps", "wnfs/create", %{})
-    attenuated_cap_2 = Capability.new("wnfs://alice.fission.name/public/Domains", "wnfs/create", %{})
+
+    attenuated_cap_2 =
+      Capability.new("wnfs://alice.fission.name/public/Domains", "wnfs/create", %{})
 
     next_ucan =
       Builder.default()
@@ -270,6 +272,7 @@ defmodule BuilderTest do
       |> Builder.claiming_capability(attenuated_cap_2)
       |> Builder.build!()
       |> Ucan.sign(meta.keypair)
+
     assert next_ucan.payload.prf == [Token.to_cid!(ucan, :blake3)]
   end
 end

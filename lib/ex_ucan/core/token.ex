@@ -105,15 +105,15 @@ defmodule Ucan.Core.Token do
   end
 
   @doc """
-  Converts a give Raw UCAN to Cid, hashed by the given hash
+  Converts a give Raw UCAN/encoded Ucan string to Cid, hashed by the given hash
   """
-  @spec to_cid(UcanRaw.t(), Builder.hash_type()) :: {:ok, String.t()} | {:error, Stirng.t()}
+  @spec to_cid(UcanRaw.t() | String.t(), Builder.hash_type()) :: {:ok, String.t()} | {:error, Stirng.t()}
   def to_cid(ucan, hash_type) do
     Cid.cid(ucan, hash_type)
   end
 
   @doc """
-  Converts a give Raw UCAN to Cid, hashed by the given hash
+  Converts a give Raw UCAN/encoded Ucan string to Cid, hashed by the given hash
 
   A runtime exception is raised if build payloads fails.
   """
