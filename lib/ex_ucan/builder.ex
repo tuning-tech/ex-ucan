@@ -5,7 +5,7 @@ defmodule Ucan.Builder do
   require Logger
   alias Ucan.Core.Capability
   alias Ucan.Core.Structs.UcanPayload
-  alias Ucan.Core.Structs.UcanRaw
+  alias Ucan
   alias Ucan.Core.Token
   alias Ucan.Keymaterial.Ed25519.Keypair
 
@@ -129,10 +129,10 @@ defmodule Ucan.Builder do
   The proof is encoded into a [Cid], hashed with given hash (blake3 by default)
   algorithm, unless one is provided.
   """
-  @spec witnessed_by(__MODULE__.t(), UcanRaw.t(), hash_type()) :: __MODULE__.t()
+  @spec witnessed_by(__MODULE__.t(), Ucan.t(), hash_type()) :: __MODULE__.t()
   def witnessed_by(builder, authority_ucan, hash_type \\ :blake3)
 
-  def witnessed_by(builder, %UcanRaw{} = authority_ucan, hash_type) do
+  def witnessed_by(builder, %Ucan{} = authority_ucan, hash_type) do
     case Token.to_cid(authority_ucan, hash_type) do
       {:ok, cid} ->
         %{builder | proofs: [cid | builder.proofs]}

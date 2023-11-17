@@ -140,7 +140,7 @@ iex> ucan_payload =
 # Step 3: Sign the payload with the keypair (generated in step 1)
 iex> ucan = Ucan.sign(ucan_payload, keypair)
 
-%Ucan.Core.Structs.UcanRaw{
+%Ucan{
   header: %Ucan.Core.Structs.UcanHeader{
     alg: "EdDSA",
     typ: "JWT"

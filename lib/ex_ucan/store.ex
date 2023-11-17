@@ -1,4 +1,4 @@
-defprotocol Ucan.Store do
+defprotocol UcanStore do
   # This protocol is to be implemented by storage backends suitable
   # for storing UCAN token, which later will be referenced by other UCANs as
   # proofs
@@ -16,28 +16,27 @@ defprotocol Ucan.Store do
   def write(store, token)
 end
 
-
-defmodule Ucan.MemoryStoreJwt do
+defmodule MemoryStoreJwt do
   @moduledoc """
-  In-memory implementation of `Ucan.Store`, where tokens are stored as encoded JWT
+  In-memory implementation of `UcanStore`, where tokens are stored as encoded JWT
   """
-  alias Ucan.Core.Token
   defstruct [:cid, :token]
-  defimpl Ucan.Store do
-    alias Ucan.MemoryStoreJwt
-    def write(_store, token) do
-      with {:ok, token_cid} <- Token.to_cid(token, :blake3) do
-        {:ok, token_cid, %MemoryStoreJwt{cid: token_cid, token: token}}
-      end
-    end
+end
 
-    def read(store, cid) do
-      if Map.has_key?(store, cid) do
-        {:ok, store.cid}
-      else
-        {:error, "CID not in the memory"}
-      end
+defimpl UcanStore, for: MemoryStoreJwt do
+  alias Ucan.Core.Token
+
+  def write(_store, token) do
+    with {:ok, token_cid} <- Token.to_cid(token, :blake3) do
+      {:ok, token_cid, %MemoryStoreJwt{cid: token_cid, token: token}}
     end
   end
 
+  def read(store, cid) do
+    if Map.has_key?(store, cid) do
+      {:ok, store.cid}
+    else
+      {:error, "CID not in the memory"}
+    end
+  end
 end

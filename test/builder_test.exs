@@ -4,7 +4,7 @@ defmodule BuilderTest do
   alias Ucan.Capabilities
   alias Ucan.Capability
   alias Ucan.Core.Structs.UcanPayload
-  alias Ucan.Core.Structs.UcanRaw
+  alias Ucan
   alias Ucan.Keymaterial
   use ExUnit.Case
 
@@ -150,7 +150,7 @@ defmodule BuilderTest do
 
     assert length(proofs) == 1
 
-    # Auhotrity token is not a valid UCANRaw
+    # Auhotrity token is not a valid Ucan
     res =
       try do
         Builder.default()
@@ -211,7 +211,7 @@ defmodule BuilderTest do
       |> Builder.with_nonce()
       |> Builder.build!()
 
-    %UcanRaw{payload: %UcanPayload{} = payload} = _ucan = Ucan.sign(token, meta.keypair)
+    %Ucan{payload: %UcanPayload{} = payload} = _ucan = Ucan.sign(token, meta.keypair)
     assert payload.iss == Keymaterial.get_did(meta.keypair)
     assert payload.aud == Keymaterial.get_did(meta.bob_keypair)
     assert is_integer(payload.exp)
@@ -240,7 +240,7 @@ defmodule BuilderTest do
       |> Builder.with_lifetime(300)
       |> Builder.build!()
 
-    %UcanRaw{payload: %UcanPayload{} = payload} = _ucan = Ucan.sign(token, meta.keypair)
+    %Ucan{payload: %UcanPayload{} = payload} = _ucan = Ucan.sign(token, meta.keypair)
     assert payload.exp > (DateTime.utc_now() |> DateTime.to_unix()) + 290
   end
 

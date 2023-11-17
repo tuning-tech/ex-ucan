@@ -18,7 +18,7 @@ defmodule UcanTest do
   end
 
   @tag :Ucan
-  test "validate_token, success", meta do
+  test "validate, success", meta do
     token =
       Builder.default()
       |> Builder.issued_by(meta.keypair)
@@ -28,7 +28,7 @@ defmodule UcanTest do
       |> Ucan.sign(meta.keypair)
       |> Ucan.encode()
 
-    assert :ok = Ucan.validate_token(token)
+    assert :ok = Ucan.validate(token)
   end
 
   @tag :Ucan
@@ -42,7 +42,7 @@ defmodule UcanTest do
       |> Ucan.sign(meta.keypair)
       |> Ucan.encode()
 
-    assert {:error, "Ucan token is already expired"} = Ucan.validate_token(token)
+    assert {:error, "Ucan token is already expired"} = Ucan.validate(token)
   end
 
   @tag :Ucan
@@ -57,6 +57,6 @@ defmodule UcanTest do
       |> Ucan.sign(meta.keypair)
       |> Ucan.encode()
 
-    assert {:error, "Ucan token is not yet active"} = Ucan.validate_token(token)
+    assert {:error, "Ucan token is not yet active"} = Ucan.validate(token)
   end
 end

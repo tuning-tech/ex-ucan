@@ -1,7 +1,6 @@
 defmodule ChainTest do
   @moduledoc false
   alias Ucan.Keymaterial
-  alias Ucan.MemoryStoreJwt
   alias Ucan.Builder
   use ExUnit.Case
 
@@ -32,11 +31,9 @@ defmodule ChainTest do
       |> Builder.build!()
       |> Ucan.sign(meta.bob_keypair)
 
-    store = Ucan.Store.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
+    store = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
     # We create a proof chain
     # then checks if the chain's last audience is mallory
     # and chains root issuer is alice
-
-
   end
 end
