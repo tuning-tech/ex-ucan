@@ -15,8 +15,8 @@ defmodule ExUcan.MixProject do
         ],
         ignore_modules: [
           Ucan.Core.Structs.Ucan,
-          Ucan.Core.Structs.UcanHeader,
-          Ucan.Core.Structs.UcanPayload
+          Ucan.UcanHeader,
+          Ucan.UcanPayload
         ]
       ]
     ]

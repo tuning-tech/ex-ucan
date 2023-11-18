@@ -37,6 +37,8 @@ defmodule Ucan.Capabilities do
   """
   alias Ucan.Capability
 
+  @type t :: map()
+
   @doc """
   Convert capabilites represented in maps to list of capabilites
 

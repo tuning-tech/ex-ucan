@@ -4,14 +4,16 @@ defmodule Ucan.Builder do
   """
   require Logger
   alias Ucan.Core.Capability
-  alias Ucan.Core.Structs.UcanPayload
+  alias Ucan.UcanPayload
   alias Ucan
-  alias Ucan.Core.Token
+  alias Ucan.Token
   alias Ucan.Keymaterial.Ed25519.Keypair
 
   # @type hash_type :: :sha1 | :sha2_256 | :sha2_512 | :sha3 | :blake2b | :blake2s | :blake3
 
   @type hash_type :: :sha2_256 | :blake3
+
+  # TODO: Change the typespecs from KeyPair to KeyMaterial
 
   @type t :: %__MODULE__{
           issuer: Keypair,

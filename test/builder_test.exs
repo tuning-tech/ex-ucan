@@ -1,9 +1,9 @@
 defmodule BuilderTest do
-  alias Ucan.Core.Token
+  alias Ucan.Token
   alias Ucan.Builder
   alias Ucan.Capabilities
   alias Ucan.Capability
-  alias Ucan.Core.Structs.UcanPayload
+  alias Ucan.UcanPayload
   alias Ucan
   alias Ucan.Keymaterial
   use ExUnit.Case

@@ -2,11 +2,12 @@ defmodule Ucan do
   @moduledoc """
   Documentation for `Ucan`.
   """
-  alias Ucan.Core.Token
+  alias Ucan.Capabilities
+  alias Ucan.Token
   alias Ucan.Keymaterial.Ed25519.Keypair
 
-  alias Ucan.Core.Structs.UcanHeader
-  alias Ucan.Core.Structs.UcanPayload
+  alias Ucan.UcanHeader
+  alias Ucan.UcanPayload
 
   @typedoc """
   header - Token Header
@@ -69,19 +70,27 @@ defmodule Ucan do
     Token.decode(token)
   end
 
+  # TODO: docs
   @spec proofs(__MODULE__.t()) :: list(String.t())
   def proofs(ucan) do
     ucan.payload.prf
   end
 
+  # TODO: docs
   @spec audience(__MODULE__.t()) :: String.t()
   def audience(ucan) do
     ucan.payload.aud
   end
 
+  # TODO: docs
   @spec issuer(__MODULE__.t()) :: String.t()
   def issuer(ucan) do
     ucan.payload.iss
+  end
+
+  @spec capabilities(__MODULE__.t()) :: Capabilities.t()
+  def capabilities(ucan) do
+    ucan.payload.cap
   end
 
   # TODO: docs

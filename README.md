@@ -124,7 +124,7 @@ iex> ucan_payload =
          |> Builder.with_lifetime(86_400)
          |> Builder.build!()
 
-%Ucan.Core.Structs.UcanPayload{
+%Ucan.UcanPayload{
   ucv: "0.10.0",
   iss: "did:key:z6MkmuTr3fgtBeTVmDtZZGmuHNrLwEA6b9KX4Shw1nyLioEy",
   aud: "did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD",
@@ -141,11 +141,11 @@ iex> ucan_payload =
 iex> ucan = Ucan.sign(ucan_payload, keypair)
 
 %Ucan{
-  header: %Ucan.Core.Structs.UcanHeader{
+  header: %Ucan.UcanHeader{
     alg: "EdDSA",
     typ: "JWT"
   },
-  payload: %Ucan.Core.Structs.UcanPayload{
+  payload: %Ucan.UcanPayload{
     ucv: "0.10.0",
     iss: "did:key:z6MkmuTr3fgtBeTVmDtZZGmuHNrLwEA6b9KX4Shw1nyLioEy",
     aud: "did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD",
@@ -193,7 +193,7 @@ iex> ucan_payload =
          |> Builder.claiming_capability(cap)
          |> Builder.build!()
 
-%Ucan.Core.Structs.UcanPayload{
+%Ucan.UcanPayload{
   ucv: "0.10.0",
   iss: "did:key:z6MkmuTr3fgtBeTVmDtZZGmuHNrLwEA6b9KX4Shw1nyLioEy",
   aud: "did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD",

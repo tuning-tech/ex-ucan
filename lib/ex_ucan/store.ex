@@ -1,7 +1,9 @@
 defprotocol UcanStore do
-  # This protocol is to be implemented by storage backends suitable
-  # for storing UCAN token, which later will be referenced by other UCANs as
-  # proofs
+  @moduledoc """
+  This protocol is to be implemented by storage backends suitable
+  for storing UCAN token, which later will be referenced by other UCANs as
+  proofs
+  """
 
   @doc """
   Reads a value from the store by CID
@@ -24,7 +26,7 @@ defmodule MemoryStoreJwt do
 end
 
 defimpl UcanStore, for: MemoryStoreJwt do
-  alias Ucan.Core.Token
+  alias Ucan.Token
 
   def write(_store, token) do
     with {:ok, token_cid} <- Token.to_cid(token, :blake3) do

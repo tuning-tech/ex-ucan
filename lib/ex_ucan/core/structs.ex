@@ -1,4 +1,4 @@
-defmodule Ucan.Core.Structs.UcanHeader do
+defmodule Ucan.UcanHeader do
   @moduledoc """
   Ucan header representation
   """
@@ -16,7 +16,7 @@ defmodule Ucan.Core.Structs.UcanHeader do
   defstruct [:alg, :typ]
 end
 
-defmodule Ucan.Core.Structs.UcanPayload do
+defmodule Ucan.UcanPayload do
   @moduledoc """
   Ucan Payload representation
   """
@@ -43,7 +43,7 @@ defmodule Ucan.Core.Structs.UcanPayload do
           exp: integer(),
           nnc: String.t(),
           fct: map(),
-          cap: Capabilities,
+          cap: Capabilities.t(),
           prf: list(String.t())
         }
 

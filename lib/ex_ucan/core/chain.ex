@@ -1,5 +1,5 @@
 defmodule Ucan.ProofChains do
-  alias Ucan.Core.Token
+  alias Ucan.Token
   alias Ucan
 
   @type t :: %__MODULE__{
@@ -15,7 +15,7 @@ defmodule Ucan.ProofChains do
           {:ok, __MODULE__.t()} | {:error, String.t()}
   def from_ucan(ucan, store) do
     with :ok <- Token.validate(ucan),
-         false <- UcanStore.impl_for(store) |> is_nil(),
+         mod when is_atom(mod) <- UcanStore.impl_for(store),
          {:ok, prf_chains} <- create_proof_chains(ucan, store) do
       {:ok,
        %__MODULE__{
@@ -24,7 +24,7 @@ defmodule Ucan.ProofChains do
          redelegations: %{}
        }}
     else
-      true -> {:error, "Store doesn't implement UcanStore"}
+      nil -> {:error, "Store doesn't implement UcanStore"}
       {:error, err} -> {:error, err}
     end
   end

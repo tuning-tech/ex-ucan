@@ -1,4 +1,4 @@
-defmodule Ucan.Core.Utils do
+defmodule Ucan.Utils do
   @moduledoc """
   Core utils
   """

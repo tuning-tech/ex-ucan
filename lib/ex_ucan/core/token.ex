@@ -1,13 +1,12 @@
-defmodule Ucan.Core.Token do
+defmodule Ucan.Token do
   @moduledoc """
   Core functions for the creation and management of UCAN tokens
   """
   alias Ucan.Builder
   alias Ucan.Capabilities
-  alias Ucan.Core.Structs.UcanHeader
-  alias Ucan.Core.Structs.UcanPayload
-  alias Ucan
-  alias Ucan.Core.Utils
+  alias Ucan.UcanHeader
+  alias Ucan.UcanPayload
+  alias Ucan.Utils
   alias Ucan.Keymaterial
   alias Ucan.Keymaterial.Ed25519.Crypto
   alias Ucan.Keymaterial.Ed25519.Keypair
