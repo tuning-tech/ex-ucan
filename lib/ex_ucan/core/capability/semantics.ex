@@ -147,7 +147,7 @@ defimpl Ucan.Capability.Semantics, for: Any do
       end
   end
 
-  def parse_capability(semantics, capability) do;
+  def parse_capability(semantics, capability) do
     parse(semantics, capability.resource, capability.ability, capability.caveat)
   end
 end

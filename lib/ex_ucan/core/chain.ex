@@ -14,8 +14,9 @@ defmodule Ucan.ProofChains do
   @spec from_ucan(Ucan.t(), store :: UcanStore.t()) ::
           {:ok, __MODULE__.t()} | {:error, String.t()}
   def from_ucan(ucan, store) do
+    _ = UcanStore.impl_for!(store)
+
     with :ok <- Token.validate(ucan),
-         mod when is_atom(mod) <- UcanStore.impl_for(store),
          {:ok, prf_chains} <- create_proof_chains(ucan, store) do
       {:ok,
        %__MODULE__{
@@ -23,9 +24,6 @@ defmodule Ucan.ProofChains do
          proofs: prf_chains,
          redelegations: %{}
        }}
-    else
-      nil -> {:error, "Store doesn't implement UcanStore"}
-      {:error, err} -> {:error, err}
     end
   end
 
@@ -47,7 +45,8 @@ defmodule Ucan.ProofChains do
       :ok
     else
       {false, :eq} ->
-        {:error, "Invalid UCAN link: audience #{audience} does not match issuer #{issuer}"}
+        {:error,
+         "Invalid UCAN link: audience - [#{audience}] does not match issuer - [#{issuer}]"}
 
       {false, :lifetime} ->
         {:error, "Invalid UCAN link: lifetime exceeds attenuation"}
@@ -59,13 +58,12 @@ defmodule Ucan.ProofChains do
   defp create_proof_chains(ucan, store) do
     Ucan.proofs(ucan)
     |> Enum.reduce_while([], fn prf, prf_chains ->
-      with {:ok, cid} <- Token.to_cid(prf),
-           {:ok, ucan_token} <- UcanStore.read(store, cid),
+      with {:ok, ucan_token} <- UcanStore.read(store, prf),
            {:ok, proof_chain} <- from_token_string(ucan_token, store),
            :ok <- validate_link_to(proof_chain, ucan) do
         {:cont, [proof_chain | prf_chains]}
       else
-        {:error, err} -> {:halt, err}
+        {:error, err} -> {:halt, {:error, err}}
       end
     end)
     |> case do

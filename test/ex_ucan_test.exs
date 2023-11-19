@@ -1,10 +1,9 @@
 defmodule UcanTest do
   alias Ucan.Builder
-  alias Ucan.Core.Utils
   alias Ucan.Keymaterial.Ed25519.Keypair
   use ExUnit.Case
   doctest Ucan
-  doctest Utils
+  doctest Ucan.Utils
 
   setup do
     keypair = Ucan.create_default_keypair()

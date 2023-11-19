@@ -22,21 +22,27 @@ defmodule MemoryStoreJwt do
   @moduledoc """
   In-memory implementation of `UcanStore`, where tokens are stored as encoded JWT
   """
-  defstruct [:cid, :token]
+  @type t :: %__MODULE__{
+          data: map()
+        }
+  defstruct data: %{}
 end
 
 defimpl UcanStore, for: MemoryStoreJwt do
   alias Ucan.Token
 
-  def write(_store, token) do
-    with {:ok, token_cid} <- Token.to_cid(token, :blake3) do
-      {:ok, token_cid, %MemoryStoreJwt{cid: token_cid, token: token}}
+  # defstruct [:store]
+  # destructure()
+  def write(store, token) do
+    with {:ok, ucan} <- Token.decode(token),
+         {:ok, token_cid} <- Token.to_cid(ucan, :blake3) do
+      {:ok, token_cid, %{store | data: Map.put(store.data, token_cid, token)}}
     end
   end
 
   def read(store, cid) do
-    if Map.has_key?(store, cid) do
-      {:ok, store.cid}
+    if Map.has_key?(store.data, cid) do
+      {:ok, store.data[cid]}
     else
       {:error, "CID not in the memory"}
     end

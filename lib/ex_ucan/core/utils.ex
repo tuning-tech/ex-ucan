@@ -8,9 +8,9 @@ defmodule Ucan.Utils do
   Generate random string to use as a nonce
 
   ## Examples
-      iex> Ucan.Core.Utils.generate_nonce() |> String.length
+      iex> Ucan.Utils.generate_nonce() |> String.length
       6
-      iex> Ucan.Core.Utils.generate_nonce(10) |> String.length
+      iex> Ucan.Utils.generate_nonce(10) |> String.length
       10
   """
   def generate_nonce(len \\ 6)
