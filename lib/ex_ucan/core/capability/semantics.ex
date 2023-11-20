@@ -2,8 +2,10 @@ defmodule Ucan.Capability.View do
 end
 
 defprotocol Ucan.Capability.Scope do
-  @spec contains?(any(), any()) :: boolean()
+  @spec contains?(Scope, any()) :: boolean()
   def contains?(scope, other_scope)
+  @spec from(Scope, URI.t() | String.t()) :: {:ok, Scope} | {:error, String.t()}
+  def from(scope, value)
 end
 
 defmodule Ucan.Capability.ResourceUri do
@@ -91,12 +93,13 @@ defmodule Ucan.Capability.Resource do
 end
 
 defprotocol Ucan.Capability.Semantics do
+  alias Ucan.Capability.Scope
   alias Ucan.Capability
   @fallback_to_any true
-  @spec parse_scope(any(), String.t()) :: :ok | nil
+  @spec parse_scope(any(), URI.t()) :: {:ok, Scope} | {:error, term()}
   def parse_scope(semantics, scope)
 
-  @spec parse_scope(any(), String.t()) :: :ok | nil
+  @spec parse_action(any(), String.t()) :: :ok | nil
   def parse_action(semantics, ability)
 
   @spec extract_did(any(), String.t()) :: {String.t(), String.t()} | nil
@@ -116,38 +119,40 @@ defprotocol Ucan.Capability.Semantics do
 end
 
 defimpl Ucan.Capability.Semantics, for: Any do
+  alias Ucan.Capability.Scope
   alias Ucan.Capability.Resource.As
   alias Ucan.Capability.Resource.My
   alias Ucan.Capability.Resource
   alias Ucan.Capability.Resource.ResourceType
-  def parse_scope(_semantics, _scope), do: :ok
+  def parse_scope(semantics, uri) do
+    Scope.from(semantics.scope, uri)
+  end
   def parse_action(_semantics, _ability), do: :ok
   def extract_did(_semantics, _path), do: {"", ""}
   def parse_resource(_semantics, _resource), do: ""
   def parse_caveat(_semantics, _value), do: %{}
 
   def parse(semantics, resource, ability, caveat) do
-    uri = URI.decode(resource)
-    uri_scheme = String.split(":") |> List.first()
+    uri = URI.parse(resource)
 
-    cap_resource =
-      case uri_scheme do
-        "my" ->
-          %Resource{type: %My{kind: parse_resource(semantics, uri)}}
+    # cap_resource =
+    #   case uri_scheme do
+    #     "my" ->
+    #       %Resource{type: %My{kind: parse_resource(semantics, uri)}}
 
-        "as" ->
-          # TODO: extract_did can return nil.., handle it later
-          {did, resource} = extract_did(semantics, uri)
-          # TODO: don't know if we really have to pass the semantics
-          # TODO: There's a URI parsing in rust, check later
-          %Resource{type: %As{did: did, kind: parse_resource(semantics, resource)}}
+    #     "as" ->
+    #       # TODO: extract_did can return nil.., handle it later
+    #       {did, resource} = extract_did(semantics, uri)
+    #       # TODO: don't know if we really have to pass the semantics
+    #       # TODO: There's a URI parsing in rust, check later
+    #       %Resource{type: %As{did: did, kind: parse_resource(semantics, resource)}}
 
-        _ ->
-          %Resource{type: %ResourceType{kind: parse_resource(semantics, uri)}}
-      end
+    #     _ ->
+    #       %Resource{type: %ResourceType{kind: parse_resource(semantics, uri)}}
+    #   end
   end
 
   def parse_capability(semantics, capability) do
-    parse(semantics, capability.resource, capability.ability, capability.caveat)
+    parse(semantics, capability.resource, capability.ability, capability.caveats)
   end
 end

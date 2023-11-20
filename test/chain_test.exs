@@ -124,5 +124,4 @@ defmodule ChainTest do
     assert {:error, "Invalid UCAN link:" <> _} =
              ProofChains.from_token_string(Ucan.encode(delegated_token_2), store)
   end
-
 end
