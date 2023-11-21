@@ -18,7 +18,7 @@ defmodule Ucan.Capability do
   See `/test/capability_test.exs`
   """
   @spec new(String.t(), String.t(), list()) :: __MODULE__.t()
-  def new(resource, ability, caveat) do
+  def new(resource, ability, caveat) when is_binary(resource) and is_binary(ability) do
     %__MODULE__{
       resource: resource,
       ability: ability,

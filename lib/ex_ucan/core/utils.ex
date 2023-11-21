@@ -20,4 +20,22 @@ defmodule Ucan.Utils do
       nonce <> String.at(@chars, :rand.uniform(String.length(@chars) - 1))
     end)
   end
+
+  @doc """
+  Converts an `{:ok, t()}`, `:ok`, `{:error, err}`, `err` to  `t()`, `nil`, `:ok`
+
+  This is a variant of ok() function in Rust which converts Result into Option while discarding the error
+  """
+  @spec ok({:ok, term()} | :ok | {:error, term()} | :error) :: term() | nil
+  def ok({:ok, value}), do: value
+  def ok(:ok), do: :ok
+  def ok(_), do: nil
+end
+
+defprotocol Ucan.Utility do
+  @doc """
+  Takes any value and convert it to `t()`
+  """
+  @spec from(t(), URI.t() | String.t() | any()) :: {:ok, t()} | {:error, String.t()}
+  def from(scope, value)
 end
