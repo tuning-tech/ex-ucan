@@ -1,10 +1,8 @@
-defmodule Ucan.Capability.View do
-end
-
 defprotocol Ucan.Capability.Scope do
   @spec contains?(Scope, any()) :: boolean()
   def contains?(scope, other_scope)
 end
+
 
 defmodule Ucan.Capability.ResourceUri do
   defmodule Scoped do
@@ -90,9 +88,53 @@ defmodule Ucan.Capability.Resource do
   end
 end
 
+defmodule Ucan.Capability.View do
+  alias Ucan.Capability.Caveats
+  alias Ucan.Capability.Resource
+  @type t :: %__MODULE__{
+    resource: Resource.t(),
+    ability: Module,
+    caveat: any()
+  }
+
+  defstruct [:resource, :ability, :caveat]
+
+  @spec new(Resource.t(), Module) :: __MODULE__.t()
+  def new(resource, ability) do
+    %__MODULE__{
+      resource: resource,
+      ability: ability,
+      caveat: Jason.encode!(%{})
+    }
+  end
+
+  @spec new_with_caveat(Resource.t(), Module, String.t()) :: __MODULE__.t()
+  def new_with_caveat(resource, ability, caveat) do
+    %__MODULE__{
+      resource: resource,
+      ability: ability,
+      caveat: caveat
+    }
+  end
+
+  @spec enables?(__MODULE__.t(), __MODULE__.t()) :: boolean()
+  def enables?(cap_view, other_cap_view) do
+    case {Caveats.from(cap_view.caveat), Caveats.from(other_cap_view.caveat)} do
+      {{:ok, caveat}, {:ok, other_caveat}} ->
+        Resource.contains?(cap_view.resource, other_cap_view.resource)
+          and cap_view.ability >= other_cap_view.ability
+          and Caveats.enables?(caveat, other_caveat)
+      _ -> false
+    end
+  end
+end
+
+
+
+
+
 defprotocol Ucan.Capability.Semantics do
   alias Ucan.Capability.ResourceUri
-  alias Ucan.Capability.Ability
   alias Ucan.Capability.Semantics
   alias Ucan.Capability.Scope
   alias Ucan.Capability
@@ -101,7 +143,7 @@ defprotocol Ucan.Capability.Semantics do
   @spec get_scope(Semantics) :: Scope
   def get_scope(semantics)
 
-  @spec get_ability(Semantics) :: Scope
+  @spec get_ability(Semantics) :: Module
   def get_ability(semantics)
 
   @spec parse_scope(any(), URI.t()) :: Scope | nil
@@ -128,12 +170,10 @@ defprotocol Ucan.Capability.Semantics do
 end
 
 defimpl Ucan.Capability.Semantics, for: Any do
+  alias Ucan.Capability.View
   alias Ucan.Utils
   alias Ucan.Utility
   alias Ucan.Capability.ResourceUri.Scoped
-  alias Ucan.Capability.Ability
-  alias Ucan.Capability.Semantics
-  alias Ucan.Capability.Scope
   alias Ucan.Capability.Resource.As
   alias Ucan.Capability.Resource.My
   alias Ucan.Capability.Resource
@@ -190,12 +230,26 @@ defimpl Ucan.Capability.Semantics, for: Any do
 
         "as" ->
           # TODO: extract_did can return nil.., handle it later
-          {did, resource} = extract_did(semantics, uri.path)
-          %Resource{type: %As{did: did, kind: parse_resource(semantics, URI.parse(resource))}}
+          case extract_did(semantics, uri.path) do
+            {did, resource} ->
+              %Resource{type: %As{did: did, kind: parse_resource(semantics, URI.parse(resource))}}
+            _ -> {:error, "Unable to extract DID"}
+          end
 
         _ ->
           %Resource{type: %ResourceType{kind: parse_resource(semantics, uri)}}
       end
+
+    cap_ability = case parse_action(semantics, ability) do
+      nil -> {:error, "Failed to parse ability"}
+      ability -> ability
+    end
+    cap_caveat = parse_caveat(semantics, caveat)
+
+    with %Resource{} = cap_resource <- cap_resource,
+         %_{} <- cap_ability do
+          View.new_with_caveat(cap_resource, cap_ability, cap_caveat)
+    end
   end
 
   def parse_capability(semantics, capability) do

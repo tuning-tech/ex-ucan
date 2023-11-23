@@ -34,8 +34,8 @@ end
 
 defprotocol Ucan.Utility do
   @doc """
-  Takes any value and convert it to `t()`
+  Takes any value and convert it to `{:ok, t()} | {:error, term()}`
   """
-  @spec from(t(), URI.t() | String.t() | any()) :: {:ok, t()} | {:error, String.t()}
+  @spec from(t(), URI.t() | String.t() | any()) :: {:ok, t()} | {:error, term()}
   def from(scope, value)
 end
