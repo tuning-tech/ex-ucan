@@ -55,6 +55,15 @@ defmodule Ucan.ProofAction do
       end
     end
   end
+
+  defimpl String.Chars do
+    def to_string(proof_action) do
+      case proof_action.type do
+        :delegate -> "ucan/DELEGATE"
+        _ -> ""
+      end
+    end
+  end
 end
 
 defmodule Ucan.ProofDelegationSemantics do

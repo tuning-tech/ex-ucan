@@ -4,11 +4,11 @@ defmodule CapabilityTest do
   alias Ucan.Capability.Caveats
   use ExUnit.Case
 
-  @tag :caps_2
+  @tag :caps
   test "can_cast_between_map_and_sequence" do
-    cap_foo = Capability.new("example//foo", "ability/foo", [%{}])
-    assert cap_foo.caveats == [%{}]
-    cap_bar = Capability.new("example://bar", "ability/bar", [%{"beep" => 1}])
+    cap_foo = Capability.new("example//foo", "ability/foo", Jason.encode!(%{}))
+    assert cap_foo.caveat == %{}
+    cap_bar = Capability.new("example://bar", "ability/bar", Jason.encode!(%{"beep" => 1}))
 
     cap_sequence = [cap_foo, cap_bar]
 
@@ -100,7 +100,7 @@ defmodule CapabilityTest do
     assert [_ | _] = Capabilities.map_to_sequence(capabilities)
   end
 
-  @tag :caps_3
+  @tag :caps
   test "sequence_to_map with multiple abilities for a resource" do
     cap_1 = Capability.new("example://bar", "ability/bar", %{})
     cap_2 = Capability.new("example://bar", "ability/foo", %{})

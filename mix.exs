@@ -9,6 +9,7 @@ defmodule ExUcan.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
+      consolidate_protocols: Mix.env() != :test,
       test_coverage: [
         summary: [
           threshold: 80

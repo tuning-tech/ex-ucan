@@ -2,10 +2,10 @@ defmodule SemanticsTest do
   @moduledoc """
   Tests for semantics.ex
   """
+  alias Ucan.Capability.View
   alias Ucan.Capability.ResourceUri.Scoped
   alias Ucan.Capability.ResourceUri
   alias Ucan.ProofSelection.Index
-  alias Ucan.Capability.Scope
   alias Ucan.ProofSelection
   alias Ucan.ProofAction
   alias Ucan.Capability
@@ -14,7 +14,9 @@ defmodule SemanticsTest do
 
   @tag :semantics
   test "proof_delegation_semantics" do
-    cap_foo = Capability.new("example://foo", "ability/foo", [%{}])
+    cap_foo = Capability.new("example://foo", "ability/foo", Jason.encode!(%{}))
+    cap_bar = Capability.new("prf:2", "ucan/DELEGATE", Jason.encode!(%{}))
+
     semantics = ProofDelegationSemantics.new()
 
     assert %ProofSelection{type: %Index{value: 3}} =
@@ -46,5 +48,9 @@ defmodule SemanticsTest do
 
     assert %ResourceUri{type: %Scoped{scope: %ProofSelection{type: %Index{value: 4}}}} =
              Capability.Semantics.parse_resource(semantics, URI.parse("prf:4"))
+
+    assert {:error, _} = Capability.Semantics.parse_capability(semantics, cap_foo)
+
+    %View{} = Capability.Semantics.parse_capability(semantics, cap_bar)
   end
 end

@@ -1,28 +1,38 @@
 defmodule Ucan.ProofChains do
+  alias Ucan.ProofSelection
+  alias Ucan.ProofSelection.Index
+  alias Ucan.Capability.ResourceUri.Scoped
+  alias Ucan.Capability.Resource.ResourceType
+  alias Ucan.Capability.ResourceUri
+  alias Ucan.Capability.Resource
+  alias Ucan.Capability.View
+  alias Ucan.Capability.Semantics
+  alias Ucan.ProofDelegationSemantics
+  alias Ucan.Capabilities
   alias Ucan.Token
   alias Ucan
 
   @type t :: %__MODULE__{
           ucan: Ucan.t(),
           proofs: list(__MODULE__.t()),
-          redelegations: map()
+          redelegations: list()
         }
   defstruct [:ucan, :proofs, :redelegations]
 
   # TODO: docs
-  # TODO: Redelegations, for that we need capabilitySemantics
   @spec from_ucan(Ucan.t(), store :: UcanStore.t()) ::
           {:ok, __MODULE__.t()} | {:error, String.t()}
   def from_ucan(ucan, store) do
     _ = UcanStore.impl_for!(store)
 
     with :ok <- Token.validate(ucan),
-         {:ok, prf_chains} <- create_proof_chains(ucan, store) do
+         {:ok, prf_chains} <- create_proof_chains(ucan, store),
+         redelegations when is_list(redelegations) <- create_redelegations(ucan, prf_chains) do
       {:ok,
        %__MODULE__{
          ucan: ucan,
          proofs: prf_chains,
-         redelegations: %{}
+         redelegations: redelegations
        }}
     end
   end
@@ -70,5 +80,45 @@ defmodule Ucan.ProofChains do
       res when is_list(res) -> {:ok, res}
       err -> err
     end
+  end
+
+  @spec create_redelegations(Ucan.t(), list(__MODULE__.t())) :: list() | {:error, String.t()}
+  defp create_redelegations(%Ucan{} = ucan, proof_chains) do
+    proof_delegation_semantics = ProofDelegationSemantics.new()
+
+    Ucan.capabilities(ucan)
+    |> Capabilities.map_to_sequence()
+    |> Enum.reduce_while(:ordsets.new(), fn capability, redelegations ->
+      case Semantics.parse_capability(proof_delegation_semantics, capability) do
+        %View{
+          resource: %Resource{
+            type: %ResourceType{
+              kind: %ResourceUri{
+                type: %Scoped{scope: %ProofSelection{type: %Index{value: index}}}
+              }
+            }
+          }
+        } ->
+          if index < length(proof_chains) do
+            {:cont, :ordsets.add_element(index, redelegations)}
+          else
+            {:halt, {:error, "Unable to redelgate proof; no proof at zero based index #{index}"}}
+          end
+
+        %View{
+          resource: %Resource{
+            type: %ResourceType{
+              kind: %ResourceUri{type: %Scoped{scope: %ProofSelection{type: :all}}}
+            }
+          }
+        } ->
+          Enum.reduce(0..length(proof_chains), redelegations, fn index, redelegations ->
+            {:cont, :ordsets.add_element(index, redelegations)}
+          end)
+
+        _ ->
+          redelegations
+      end
+    end)
   end
 end

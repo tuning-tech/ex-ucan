@@ -6,23 +6,32 @@ defmodule Ucan.Capability do
   @type t :: %__MODULE__{
           resource: String.t(),
           ability: String.t(),
-          caveats: list(map())
+          caveat: any()
         }
 
   @derive Jason.Encoder
-  defstruct [:resource, :ability, :caveats]
+  defstruct [:resource, :ability, :caveat]
 
   @doc """
   Creates a new capability with given resource, ability and caveat
 
   See `/test/capability_test.exs`
   """
-  @spec new(String.t(), String.t(), list()) :: __MODULE__.t()
+  @spec new(String.t(), String.t(), any()) :: __MODULE__.t()
+  def new(resource, ability, caveat)
+      when is_binary(resource) and is_binary(ability) and is_binary(caveat) do
+    %__MODULE__{
+      resource: resource,
+      ability: ability,
+      caveat: Jason.decode!(caveat)
+    }
+  end
+
   def new(resource, ability, caveat) when is_binary(resource) and is_binary(ability) do
     %__MODULE__{
       resource: resource,
       ability: ability,
-      caveats: caveat
+      caveat: caveat
     }
   end
 end
@@ -50,11 +59,11 @@ defmodule Ucan.Capabilities do
     Enum.reduce(capabilities, [], fn {resource, abilities}, caps ->
       caps ++
         Enum.reduce(abilities, [], fn
-          {ability, caveats}, cap_list when length(caveats) >= 1 ->
-            cap_list ++ [Capability.new(resource, ability, caveats)]
-
-          {_ability, _caveats}, cap_list ->
+          {_ability, []}, cap_list ->
             cap_list
+
+          {ability, [caveat]}, cap_list ->
+            cap_list ++ [Capability.new(resource, ability, caveat)]
         end)
     end)
   end
@@ -68,8 +77,8 @@ defmodule Ucan.Capabilities do
   def sequence_to_map(capabilites) do
     capabilites
     |> Enum.reduce(%{}, fn %Capability{} = cap, caps ->
-      Map.update(caps, cap.resource, %{cap.ability => transform_caveats(cap.caveats)}, fn val ->
-        Map.put(val, cap.ability, transform_caveats(cap.caveats))
+      Map.update(caps, cap.resource, %{cap.ability => transform_caveats(cap.caveat)}, fn val ->
+        Map.put(val, cap.ability, transform_caveats(cap.caveat))
       end)
     end)
     |> validate_resources()
