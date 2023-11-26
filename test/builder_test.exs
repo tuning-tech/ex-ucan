@@ -275,4 +275,31 @@ defmodule BuilderTest do
 
     assert next_ucan.payload.prf == [Token.to_cid!(ucan, :blake3)]
   end
+
+  @tag :delegate
+  test "delegating_from", meta do
+    cap = Capability.new("example://bar", "ability/bar", Jason.encode!(%{"beep" => 1}))
+
+    authority_token =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.claiming_capability(cap)
+      |> Builder.build!()
+      |> Ucan.sign(meta.keypair)
+
+    delegated_token =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.claiming_capability(cap)
+      |> Builder.witnessed_by(authority_token)
+      |> Builder.delegating_from(authority_token)
+      |> Builder.build()
+      |> Ucan.sign(meta.keypair)
+
+      assert %{} = Ucan.capabilities(delegated_token)
+  end
 end

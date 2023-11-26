@@ -3,7 +3,10 @@ defmodule Ucan.Builder do
   Builder functions for UCAN tokens
   """
   require Logger
-  alias Ucan.Core.Capability
+  alias Ucan.Capability
+  alias Ucan.Capability.View
+  alias Ucan.Capability.Semantics
+  alias Ucan.ProofDelegationSemantics
   alias Ucan.UcanPayload
   alias Ucan
   alias Ucan.Token
@@ -128,6 +131,7 @@ defmodule Ucan.Builder do
   Includes a UCAN in the list of proofs for the UCAN to be built.
   Note that the proof's audience must match this UCAN's issuer
   or else the proof chain will be invalidated!
+
   The proof is encoded into a [Cid], hashed with given hash (blake3 by default)
   algorithm, unless one is provided.
   """
@@ -152,6 +156,36 @@ defmodule Ucan.Builder do
   @spec claiming_capability(__MODULE__.t(), Capability.t()) :: __MODULE__.t()
   def claiming_capability(builder, capability) do
     %{builder | capabilities: builder.capabilities ++ [capability]}
+  end
+
+  @doc """
+  Delegate all capabilities from a given proof to the audience of the UCAN
+  you're building.
+  The proof is encoded into a Cid, hashed with given hash (blake3 by default)
+  algorithm, unless one is provided.
+  """
+  @spec delegating_from(__MODULE__.t(), Ucan.t(), hash_type()) :: __MODULE__.t()
+  def delegating_from(builder, authority_ucan, hash_type \\ :blake3) do
+    case Token.to_cid(authority_ucan, hash_type) do
+      {:ok, cid} ->
+        builder = %{builder | proofs: [cid | builder.proofs]}
+        proof_index = length(builder.proofs) - 1
+        proof_delegation = ProofDelegationSemantics.new()
+
+        case Semantics.parse(proof_delegation, "prf:#{proof_index}", "ucan/DELEGATE", nil) do
+          %View{} = cap_view ->
+            capability = Capability.new(cap_view)
+            %{builder | capabilities: builder.capabilities ++ [capability]}
+
+          _ ->
+            Logger.warning("Could not produce delegation capability")
+            builder
+        end
+
+      {:error, err} ->
+        Logger.warning("Could not encode authoritative UCAN: #{err}")
+        builder
+    end
   end
 
   @doc """

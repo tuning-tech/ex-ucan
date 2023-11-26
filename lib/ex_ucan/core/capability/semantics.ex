@@ -94,13 +94,13 @@ defmodule Ucan.Capability.View do
 
   @type t :: %__MODULE__{
           resource: Resource.t(),
-          ability: Module,
+          ability: any(),
           caveat: any()
         }
 
   defstruct [:resource, :ability, :caveat]
 
-  @spec new(Resource.t(), Module) :: __MODULE__.t()
+  @spec new(Resource.t(), any()) :: __MODULE__.t()
   def new(resource, ability) do
     %__MODULE__{
       resource: resource,
@@ -109,7 +109,7 @@ defmodule Ucan.Capability.View do
     }
   end
 
-  @spec new_with_caveat(Resource.t(), Module, String.t()) :: __MODULE__.t()
+  @spec new_with_caveat(Resource.t(), any(), String.t()) :: __MODULE__.t()
   def new_with_caveat(resource, ability, caveat) do
     %__MODULE__{
       resource: resource,
@@ -161,7 +161,7 @@ defprotocol Ucan.Capability.Semantics do
   def parse_caveat(semantics, value)
 
   @spec parse(any(), String.t(), String.t(), map() | nil) ::
-          {:ok, Ucan.Capability.View} | {:error, String.t()}
+          Ucan.Capability.View | nil
   def parse(semantics, resource, ability, caveat)
 
   @spec parse_capability(any(), Capability.t()) :: Ucan.Capability.View | nil
