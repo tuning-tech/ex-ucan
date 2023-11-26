@@ -45,6 +45,14 @@ defmodule Ucan.ProofChains do
     end
   end
 
+  # TODO: docs
+  @spec from_cid(String.t(), UcanStore.t()) :: {:ok, __MODULE__.t()} | {:error, String.t()}
+  def from_cid(cid, store) do
+    with {:ok, token} <- UcanStore.read(store, cid) do
+      from_token_string(token, store)
+    end
+  end
+
   @spec validate_link_to(__MODULE__.t(), Ucan.t()) :: :ok | {:error, String.t()}
   defp validate_link_to(proof_chain, ucan) do
     audience = Ucan.audience(proof_chain.ucan)

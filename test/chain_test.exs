@@ -32,25 +32,12 @@ defmodule ChainTest do
       |> Builder.build!()
       |> Ucan.sign(meta.bob_keypair)
 
-    # delegated_token_2 =
-    #   Builder.default()
-    #   |> Builder.issued_by(meta.mallory_keypair)
-    #   |> Builder.for_audience(Keymaterial.get_did(meta.alice_keypair))
-    #   |> Builder.with_lifetime(86_400)
-    #   |> Builder.witnessed_by(delegated_token)
-    #   |> Builder.build!()
-    #   |> Ucan.sign(meta.mallory_keypair)
-
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
-    # {:ok, cid, store} = UcanStore.write(store, Ucan.encode(delegated_token))
 
     assert {:ok, %ProofChains{} = proof_chain} =
              ProofChains.from_token_string(Ucan.encode(delegated_token), store)
 
     assert length(proof_chain.proofs) == 1
-    # We create a proof chain
-    # then checks if the chain's last audience is mallory
-    # and chains root issuer is alice
   end
 
   @tag :chain
@@ -123,5 +110,122 @@ defmodule ChainTest do
 
     assert {:error, "Invalid UCAN link:" <> _} =
              ProofChains.from_token_string(Ucan.encode(delegated_token_2), store)
+  end
+
+  @tag :chain
+  test "it_decodes_deep_ucan_chains_3", meta do
+    leaf_ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.build!()
+      |> Ucan.sign(meta.alice_keypair)
+
+    delegated_token =
+      Builder.default()
+      |> Builder.issued_by(meta.bob_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.mallory_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.witnessed_by(leaf_ucan)
+      |> Builder.build!()
+      |> Ucan.sign(meta.bob_keypair)
+
+    {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
+
+    assert {:ok, %ProofChains{} = proof_chain} =
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+
+    assert length(proof_chain.proofs) == 1
+
+    assert Ucan.audience(proof_chain.ucan) == Keymaterial.get_did(meta.mallory_keypair)
+    [prf_chain_2 | _t] = proof_chain.proofs
+    assert Ucan.issuer(prf_chain_2.ucan) == Keymaterial.get_did(meta.alice_keypair)
+  end
+
+  @tag :chain
+  test "it_fails_with_incorrect_chaining", meta do
+    leaf_ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.build!()
+      |> Ucan.sign(meta.alice_keypair)
+
+    delegated_token =
+      Builder.default()
+      |> Builder.issued_by(meta.alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.mallory_keypair))
+      |> Builder.with_lifetime(50)
+      |> Builder.witnessed_by(leaf_ucan)
+      |> Builder.build!()
+      |> Ucan.sign(meta.alice_keypair)
+
+    {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
+
+    assert {:error, "Invalid UCAN link:" <> _} =
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+  end
+
+  @tag :chain
+  test "it_can_be_instantiated_by_cid", meta do
+    leaf_ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.build!()
+      |> Ucan.sign(meta.alice_keypair)
+
+    delegated_token =
+      Builder.default()
+      |> Builder.issued_by(meta.bob_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.mallory_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.witnessed_by(leaf_ucan)
+      |> Builder.build!()
+      |> Ucan.sign(meta.bob_keypair)
+
+    {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
+    {:ok, cid, store} = UcanStore.write(store, Ucan.encode(delegated_token))
+
+    assert {:ok, _} =
+             ProofChains.from_cid(cid, store)
+  end
+
+  @tag :chain_rs
+  test "it_can_handle_multiple_leaves", meta do
+    leaf_ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.build!()
+      |> Ucan.sign(meta.alice_keypair)
+
+    leaf_ucan_2 =
+      Builder.default()
+      |> Builder.issued_by(meta.mallory_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.build!()
+      |> Ucan.sign(meta.mallory_keypair)
+
+    delegated_token =
+      Builder.default()
+      |> Builder.issued_by(meta.bob_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.alice_keypair))
+      |> Builder.with_lifetime(50)
+      |> Builder.witnessed_by(leaf_ucan)
+      |> Builder.witnessed_by(leaf_ucan_2)
+      |> Builder.build!()
+      |> Ucan.sign(meta.bob_keypair)
+
+    {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
+    {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_2))
+
+    assert {:ok, _} =
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store) |> IO.inspect()
   end
 end
