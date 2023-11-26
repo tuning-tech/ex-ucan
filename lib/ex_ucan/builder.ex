@@ -149,7 +149,7 @@ defmodule Ucan.Builder do
   Claim a capability by inheritance (from an authorizing proof) or
   implicitly by ownership of the resource by this UCAN's issuer
   """
-  @spec claiming_capability(__MODULE__.t(), Capability) :: __MODULE__.t()
+  @spec claiming_capability(__MODULE__.t(), Capability.t()) :: __MODULE__.t()
   def claiming_capability(builder, capability) do
     %{builder | capabilities: builder.capabilities ++ [capability]}
   end

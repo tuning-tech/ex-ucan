@@ -226,6 +226,6 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_2))
 
     assert {:ok, _} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store) |> IO.inspect()
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
   end
 end
