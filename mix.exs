@@ -9,14 +9,15 @@ defmodule ExUcan.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
+      consolidate_protocols: Mix.env() != :test,
       test_coverage: [
         summary: [
           threshold: 80
         ],
         ignore_modules: [
           Ucan.Core.Structs.Ucan,
-          Ucan.Core.Structs.UcanHeader,
-          Ucan.Core.Structs.UcanPayload
+          Ucan.UcanHeader,
+          Ucan.UcanPayload
         ]
       ]
     ]
@@ -38,7 +39,8 @@ defmodule ExUcan.MixProject do
     [
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:b58, "~> 1.0.2"},
-      {:excid, git: "https://github.com/madclaws/cid.git"}
+      {:excid, git: "https://github.com/madclaws/cid.git"},
+      {:ex_ipfs_ipld, "~> 1.0"}
     ]
   end
 

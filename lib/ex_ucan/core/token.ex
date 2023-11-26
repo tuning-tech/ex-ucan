@@ -1,13 +1,12 @@
-defmodule Ucan.Core.Token do
+defmodule Ucan.Token do
   @moduledoc """
   Core functions for the creation and management of UCAN tokens
   """
   alias Ucan.Builder
   alias Ucan.Capabilities
-  alias Ucan.Core.Structs.UcanHeader
-  alias Ucan.Core.Structs.UcanPayload
-  alias Ucan.Core.Structs.UcanRaw
-  alias Ucan.Core.Utils
+  alias Ucan.UcanHeader
+  alias Ucan.UcanPayload
+  alias Ucan.Utils
   alias Ucan.Keymaterial
   alias Ucan.Keymaterial.Ed25519.Crypto
   alias Ucan.Keymaterial.Ed25519.Keypair
@@ -55,9 +54,24 @@ defmodule Ucan.Core.Token do
     end
   end
 
-  @spec encode(UcanRaw.t()) :: String.t()
-  def encode(%UcanRaw{} = ucan) do
+  @spec encode(Ucan.t()) :: String.t()
+  def encode(%Ucan{} = ucan) do
     "#{ucan.signed_data}.#{ucan.signature}"
+  end
+
+  @spec decode(String.t()) :: {:ok, Ucan.t()} | {:error, String.t() | map()}
+  def decode(encoded_token) do
+    with {:ok, {header, payload}} <- parse_encoded_ucan(encoded_token) do
+      [enc_header, enc_payload, enc_signature] = String.split(encoded_token, ".")
+
+      {:ok,
+       %Ucan{
+         header: header,
+         payload: payload,
+         signed_data: "#{enc_header}.#{enc_payload}",
+         signature: enc_signature
+       }}
+    end
   end
 
   @doc """
@@ -65,18 +79,30 @@ defmodule Ucan.Core.Token do
 
   - encoded_token - Ucan token
   """
-  @spec validate(String.t()) :: :ok | {:error, String.t() | map()}
-  def validate(encoded_ucan) do
-    with {:ok, {_header, payload}} <- parse_encoded_ucan(encoded_ucan),
+  @spec validate(String.t() | Ucan.t()) :: :ok | {:error, String.t() | map()}
+  def validate(ucan) when is_binary(ucan) do
+    with {:ok, {_header, payload}} <- parse_encoded_ucan(ucan),
          {false, _} <- {is_expired?(payload), :expired},
          {false, _} <- {is_too_early?(payload), :early} do
-      [encoded_header, encoded_payload, encoded_sign] = String.split(encoded_ucan, ".")
+      [encoded_header, encoded_payload, encoded_sign] = String.split(ucan, ".")
       {:ok, signature} = Base.url_decode64(encoded_sign, padding: false)
       data = "#{encoded_header}.#{encoded_payload}"
       verify_signature(payload.iss, data, signature)
     else
       {true, :expired} -> {:error, "Ucan token is already expired"}
       {true, :early} -> {:error, "Ucan token is not yet active"}
+      err -> err
+    end
+  end
+
+  def validate(%Ucan{} = ucan) do
+    with {false, _} <- {is_expired?(ucan.payload), :expired},
+         {false, _} <- {is_too_early?(ucan.payload), :early} do
+      {:ok, signature} = Base.url_decode64(ucan.signature, padding: false)
+      verify_signature(ucan.payload.iss, ucan.signed_data, signature)
+    else
+      {true, :expired} -> {:error, "Ucan is already expired"}
+      {true, :early} -> {:error, "Ucan is not yet active"}
       err -> err
     end
   end
@@ -96,7 +122,7 @@ defmodule Ucan.Core.Token do
     signed_data = "#{encoded_header}.#{encoded_payload}"
     signature = Keymaterial.sign(keypair, signed_data)
 
-    %UcanRaw{
+    %Ucan{
       header: header,
       payload: payload,
       signed_data: signed_data,
@@ -105,11 +131,27 @@ defmodule Ucan.Core.Token do
   end
 
   @doc """
-  Converts a give Raw UCAN to Cid, hashed by the given hash
+  Converts a give Raw UCAN/encoded Ucan string to Cid, hashed by the given hash
   """
-  @spec to_cid(UcanRaw.t(), Builder.hash_type()) :: {:ok, String.t()} | {:error, Stirng.t()}
+  @spec to_cid(Ucan.t() | String.t(), Builder.hash_type()) ::
+          {:ok, String.t()} | {:error, Stirng.t()}
+  def to_cid(ucan, hash_type \\ :blake3)
+
   def to_cid(ucan, hash_type) do
     Cid.cid(ucan, hash_type)
+  end
+
+  @doc """
+  Converts a give Raw UCAN/encoded Ucan string to Cid, hashed by the given hash
+
+  A runtime exception is raised if build payloads fails.
+  """
+  @spec to_cid!(Ucan.t() | String.t(), Builder.hash_type()) :: String.t()
+  def to_cid!(ucan, hash_type) do
+    case Cid.cid(ucan, hash_type) do
+      {:ok, cid} -> cid
+      {:error, err} -> raise err
+    end
   end
 
   @spec encode_ucan_parts(UcanHeader.t() | UcanPayload.t()) :: String.t()

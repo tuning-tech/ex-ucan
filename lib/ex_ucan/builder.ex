@@ -4,14 +4,16 @@ defmodule Ucan.Builder do
   """
   require Logger
   alias Ucan.Core.Capability
-  alias Ucan.Core.Structs.UcanPayload
-  alias Ucan.Core.Structs.UcanRaw
-  alias Ucan.Core.Token
+  alias Ucan.UcanPayload
+  alias Ucan
+  alias Ucan.Token
   alias Ucan.Keymaterial.Ed25519.Keypair
 
   # @type hash_type :: :sha1 | :sha2_256 | :sha2_512 | :sha3 | :blake2b | :blake2s | :blake3
 
   @type hash_type :: :sha2_256 | :blake3
+
+  # TODO: Change the typespecs from KeyPair to KeyMaterial
 
   @type t :: %__MODULE__{
           issuer: Keypair,
@@ -129,10 +131,10 @@ defmodule Ucan.Builder do
   The proof is encoded into a [Cid], hashed with given hash (blake3 by default)
   algorithm, unless one is provided.
   """
-  @spec witnessed_by(__MODULE__.t(), UcanRaw.t(), hash_type()) :: __MODULE__.t()
+  @spec witnessed_by(__MODULE__.t(), Ucan.t(), hash_type()) :: __MODULE__.t()
   def witnessed_by(builder, authority_ucan, hash_type \\ :blake3)
 
-  def witnessed_by(builder, %UcanRaw{} = authority_ucan, hash_type) do
+  def witnessed_by(builder, %Ucan{} = authority_ucan, hash_type) do
     case Token.to_cid(authority_ucan, hash_type) do
       {:ok, cid} ->
         %{builder | proofs: [cid | builder.proofs]}
@@ -147,7 +149,7 @@ defmodule Ucan.Builder do
   Claim a capability by inheritance (from an authorizing proof) or
   implicitly by ownership of the resource by this UCAN's issuer
   """
-  @spec claiming_capability(__MODULE__.t(), Capability) :: __MODULE__.t()
+  @spec claiming_capability(__MODULE__.t(), Capability.t()) :: __MODULE__.t()
   def claiming_capability(builder, capability) do
     %{builder | capabilities: builder.capabilities ++ [capability]}
   end

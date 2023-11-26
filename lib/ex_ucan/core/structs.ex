@@ -1,4 +1,4 @@
-defmodule Ucan.Core.Structs.UcanHeader do
+defmodule Ucan.UcanHeader do
   @moduledoc """
   Ucan header representation
   """
@@ -16,7 +16,7 @@ defmodule Ucan.Core.Structs.UcanHeader do
   defstruct [:alg, :typ]
 end
 
-defmodule Ucan.Core.Structs.UcanPayload do
+defmodule Ucan.UcanPayload do
   @moduledoc """
   Ucan Payload representation
   """
@@ -43,33 +43,10 @@ defmodule Ucan.Core.Structs.UcanPayload do
           exp: integer(),
           nnc: String.t(),
           fct: map(),
-          cap: Capabilities,
+          cap: Capabilities.t(),
           prf: list(String.t())
         }
 
   @derive Jason.Encoder
   defstruct [:ucv, :iss, :aud, :nbf, :exp, :nnc, :fct, :cap, :prf]
-end
-
-defmodule Ucan.Core.Structs.UcanRaw do
-  @moduledoc """
-  UCAN struct
-  """
-  alias Ucan.Core.Structs.UcanHeader
-  alias Ucan.Core.Structs.UcanPayload
-
-  @typedoc """
-  header - Token Header
-  payload - Token payload
-  signed_data - Data that would be eventually signed
-  signature - Base64Url encoded signature
-  """
-  @type t :: %__MODULE__{
-          header: UcanHeader.t(),
-          payload: UcanPayload.t(),
-          signed_data: String.t(),
-          signature: String.t()
-        }
-
-  defstruct [:header, :payload, :signed_data, :signature]
 end

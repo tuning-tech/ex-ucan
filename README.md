@@ -124,7 +124,7 @@ iex> ucan_payload =
          |> Builder.with_lifetime(86_400)
          |> Builder.build!()
 
-%Ucan.Core.Structs.UcanPayload{
+%Ucan.UcanPayload{
   ucv: "0.10.0",
   iss: "did:key:z6MkmuTr3fgtBeTVmDtZZGmuHNrLwEA6b9KX4Shw1nyLioEy",
   aud: "did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD",
@@ -140,12 +140,12 @@ iex> ucan_payload =
 # Step 3: Sign the payload with the keypair (generated in step 1)
 iex> ucan = Ucan.sign(ucan_payload, keypair)
 
-%Ucan.Core.Structs.UcanRaw{
-  header: %Ucan.Core.Structs.UcanHeader{
+%Ucan{
+  header: %Ucan.UcanHeader{
     alg: "EdDSA",
     typ: "JWT"
   },
-  payload: %Ucan.Core.Structs.UcanPayload{
+  payload: %Ucan.UcanPayload{
     ucv: "0.10.0",
     iss: "did:key:z6MkmuTr3fgtBeTVmDtZZGmuHNrLwEA6b9KX4Shw1nyLioEy",
     aud: "did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD",
@@ -193,7 +193,7 @@ iex> ucan_payload =
          |> Builder.claiming_capability(cap)
          |> Builder.build!()
 
-%Ucan.Core.Structs.UcanPayload{
+%Ucan.UcanPayload{
   ucv: "0.10.0",
   iss: "did:key:z6MkmuTr3fgtBeTVmDtZZGmuHNrLwEA6b9KX4Shw1nyLioEy",
   aud: "did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD",
@@ -218,7 +218,7 @@ The library is no-where feature parity with ucan [rust](https://github.com/ucan-
 But good thing is we have now laid the basic foundations. The next immediate additions would be,
 
 - [X] Proof encodings as CID (Content Addressable Data)
-- [ ] Capability Semantics
+- [X] Capability Semantics
 - [ ] `delegating_from` in builder 
 - [ ] Verifying UCAN invocations
 

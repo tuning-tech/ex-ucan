@@ -1,4 +1,4 @@
-defmodule Ucan.Core.Utils do
+defmodule Ucan.Utils do
   @moduledoc """
   Core utils
   """
@@ -8,9 +8,9 @@ defmodule Ucan.Core.Utils do
   Generate random string to use as a nonce
 
   ## Examples
-      iex> Ucan.Core.Utils.generate_nonce() |> String.length
+      iex> Ucan.Utils.generate_nonce() |> String.length
       6
-      iex> Ucan.Core.Utils.generate_nonce(10) |> String.length
+      iex> Ucan.Utils.generate_nonce(10) |> String.length
       10
   """
   def generate_nonce(len \\ 6)
@@ -20,4 +20,22 @@ defmodule Ucan.Core.Utils do
       nonce <> String.at(@chars, :rand.uniform(String.length(@chars) - 1))
     end)
   end
+
+  @doc """
+  Converts an `{:ok, t()}`, `:ok`, `{:error, err}`, `err` to  `t()`, `nil`, `:ok`
+
+  This is a variant of ok() function in Rust which converts Result into Option while discarding the error
+  """
+  @spec ok({:ok, term()} | :ok | {:error, term()} | :error) :: term() | nil
+  def ok({:ok, value}), do: value
+  def ok(:ok), do: :ok
+  def ok(_), do: nil
+end
+
+defprotocol Ucan.Utility do
+  @doc """
+  Takes any value and convert it to `{:ok, t()} | {:error, term()}`
+  """
+  @spec from(t(), URI.t() | String.t() | any()) :: {:ok, t()} | {:error, term()}
+  def from(scope, value)
 end
