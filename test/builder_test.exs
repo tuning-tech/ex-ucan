@@ -294,12 +294,10 @@ defmodule BuilderTest do
       |> Builder.issued_by(meta.keypair)
       |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
       |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
-      |> Builder.claiming_capability(cap)
-      |> Builder.witnessed_by(authority_token)
       |> Builder.delegating_from(authority_token)
-      |> Builder.build()
+      |> Builder.build!()
       |> Ucan.sign(meta.keypair)
 
-      assert %{} = Ucan.capabilities(delegated_token)
+    assert %{"prf:0" => %{"ucan/DELEGATE" => [%{}]}} = Ucan.capabilities(delegated_token)
   end
 end

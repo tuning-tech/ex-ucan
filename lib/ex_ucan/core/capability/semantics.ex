@@ -34,6 +34,15 @@ defmodule Ucan.Capability.ResourceUri do
       end
     end
   end
+
+  defimpl String.Chars do
+    def to_string(resource_uri) do
+      case resource_uri.type do
+        %Scoped{scope: scope} -> Kernel.to_string(scope)
+        :unscoped -> "*"
+      end
+    end
+  end
 end
 
 defmodule Ucan.Capability.Resource do
@@ -82,6 +91,16 @@ defmodule Ucan.Capability.Resource do
 
         {%{type: %As{did: did, kind: res}}, %{type: %As{did: other_did, kind: other_res}}} ->
           if did == other_did, do: contains?(res, other_res), else: false
+      end
+    end
+  end
+
+  defimpl String.Chars do
+    def to_string(resource) do
+      case resource.type do
+        %ResourceType{kind: kind} -> Kernel.to_string(kind)
+        %My{kind: kind} -> "my:#{Kernel.to_string(kind)}"
+        %As{did: did, kind: kind} -> "as:#{did}:#{Kernel.to_string(kind)}"
       end
     end
   end
@@ -160,7 +179,7 @@ defprotocol Ucan.Capability.Semantics do
   @spec parse_caveat(any(), map()) :: map()
   def parse_caveat(semantics, value)
 
-  @spec parse(any(), String.t(), String.t(), map() | nil) ::
+  @spec parse(t(), String.t(), String.t(), map() | nil) ::
           Ucan.Capability.View | nil
   def parse(semantics, resource, ability, caveat)
 

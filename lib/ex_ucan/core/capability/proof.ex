@@ -39,6 +39,17 @@ defmodule Ucan.ProofSelection do
       end
     end
   end
+
+  defimpl String.Chars do
+    alias Ucan.ProofSelection
+
+    def to_string(proof_selection) do
+      case proof_selection do
+        %ProofSelection{type: nil} -> "prf:*"
+        %ProofSelection{type: %Index{value: value}} -> "prf:#{Kernel.to_string(value)}"
+      end
+    end
+  end
 end
 
 defmodule Ucan.ProofAction do

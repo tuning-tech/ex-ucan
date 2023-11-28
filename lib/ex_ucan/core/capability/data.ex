@@ -40,7 +40,11 @@ defmodule Ucan.Capability do
 
   @spec new(Capability.View.t()) :: __MODULE__.t()
   def new(%View{} = capability_view) do
-    new(capability_view.resource, capability_view.ability, capability_view.caveat)
+    new(
+      to_string(capability_view.resource),
+      to_string(capability_view.ability),
+      capability_view.caveat
+    )
   end
 end
 
