@@ -219,9 +219,7 @@ But good thing is we have now laid the basic foundations. The next immediate add
 
 - [X] Proof encodings as CID (Content Addressable Data)
 - [X] Capability Semantics
-- [ ] `delegating_from` in builder 
-- [ ] Verifying UCAN invocations
-
+- [X] `delegating_from` in builder 
 
 ## Acknowledgement
 

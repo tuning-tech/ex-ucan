@@ -39,6 +39,17 @@ defmodule Ucan.ProofSelection do
       end
     end
   end
+
+  defimpl String.Chars do
+    alias Ucan.ProofSelection
+
+    def to_string(proof_selection) do
+      case proof_selection do
+        %ProofSelection{type: nil} -> "prf:*"
+        %ProofSelection{type: %Index{value: value}} -> "prf:#{Kernel.to_string(value)}"
+      end
+    end
+  end
 end
 
 defmodule Ucan.ProofAction do
@@ -67,6 +78,7 @@ defmodule Ucan.ProofAction do
 end
 
 defmodule Ucan.ProofDelegationSemantics do
+  alias Ucan.ProofSelection.Index
   # implement Capability.Semantics protocol
   @type t :: %__MODULE__{
           scope: Ucan.ProofSelection.t(),
@@ -75,10 +87,19 @@ defmodule Ucan.ProofDelegationSemantics do
   defstruct [:scope, :ability]
 
   # TODO: doc
-  @spec new() :: __MODULE__.t()
-  def new() do
+  @spec new(integer()) :: __MODULE__.t()
+  def new(prf_index \\ nil)
+
+  def new(prf_index) do
+    scope =
+      if is_nil(prf_index) do
+        %Ucan.ProofSelection{type: :all}
+      else
+        %Ucan.ProofSelection{type: %Index{value: prf_index}}
+      end
+
     %__MODULE__{
-      scope: %Ucan.ProofSelection{type: :all},
+      scope: scope,
       ability: %Ucan.ProofAction{}
     }
   end

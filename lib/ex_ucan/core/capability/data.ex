@@ -3,6 +3,9 @@ defmodule Ucan.Capability do
   Capabilities are a list of `resources`, and the `abilities` that we
   can make on the `resource` with some optional `caveats`.
   """
+  alias Ucan.Capability.View
+  alias Ucan.Capability
+
   @type t :: %__MODULE__{
           resource: String.t(),
           ability: String.t(),
@@ -33,6 +36,15 @@ defmodule Ucan.Capability do
       ability: ability,
       caveat: caveat
     }
+  end
+
+  @spec new(Capability.View.t()) :: __MODULE__.t()
+  def new(%View{} = capability_view) do
+    new(
+      to_string(capability_view.resource),
+      to_string(capability_view.ability),
+      capability_view.caveat
+    )
   end
 end
 

@@ -34,6 +34,15 @@ defmodule Ucan.Capability.ResourceUri do
       end
     end
   end
+
+  defimpl String.Chars do
+    def to_string(resource_uri) do
+      case resource_uri.type do
+        %Scoped{scope: scope} -> Kernel.to_string(scope)
+        :unscoped -> "*"
+      end
+    end
+  end
 end
 
 defmodule Ucan.Capability.Resource do
@@ -85,6 +94,16 @@ defmodule Ucan.Capability.Resource do
       end
     end
   end
+
+  defimpl String.Chars do
+    def to_string(resource) do
+      case resource.type do
+        %ResourceType{kind: kind} -> Kernel.to_string(kind)
+        %My{kind: kind} -> "my:#{Kernel.to_string(kind)}"
+        %As{did: did, kind: kind} -> "as:#{did}:#{Kernel.to_string(kind)}"
+      end
+    end
+  end
 end
 
 defmodule Ucan.Capability.View do
@@ -94,13 +113,13 @@ defmodule Ucan.Capability.View do
 
   @type t :: %__MODULE__{
           resource: Resource.t(),
-          ability: Module,
+          ability: any(),
           caveat: any()
         }
 
   defstruct [:resource, :ability, :caveat]
 
-  @spec new(Resource.t(), Module) :: __MODULE__.t()
+  @spec new(Resource.t(), any()) :: __MODULE__.t()
   def new(resource, ability) do
     %__MODULE__{
       resource: resource,
@@ -109,7 +128,7 @@ defmodule Ucan.Capability.View do
     }
   end
 
-  @spec new_with_caveat(Resource.t(), Module, String.t()) :: __MODULE__.t()
+  @spec new_with_caveat(Resource.t(), any(), String.t()) :: __MODULE__.t()
   def new_with_caveat(resource, ability, caveat) do
     %__MODULE__{
       resource: resource,
@@ -160,8 +179,8 @@ defprotocol Ucan.Capability.Semantics do
   @spec parse_caveat(any(), map()) :: map()
   def parse_caveat(semantics, value)
 
-  @spec parse(any(), String.t(), String.t(), map() | nil) ::
-          {:ok, Ucan.Capability.View} | {:error, String.t()}
+  @spec parse(t(), String.t(), String.t(), map() | nil) ::
+          Ucan.Capability.View | nil
   def parse(semantics, resource, ability, caveat)
 
   @spec parse_capability(any(), Capability.t()) :: Ucan.Capability.View | nil
