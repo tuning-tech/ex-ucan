@@ -1,5 +1,5 @@
 defprotocol Ucan.Capability.Scope do
-  @spec contains?(Scope, any()) :: boolean()
+  @spec contains?(t(), t()) :: boolean()
   def contains?(scope, other_scope)
 end
 
