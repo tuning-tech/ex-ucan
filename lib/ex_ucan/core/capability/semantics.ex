@@ -207,12 +207,12 @@ defimpl Ucan.Capability.Semantics, for: Any do
   end
 
   def parse_scope(semantics, uri) do
-    Utility.from(get_scope(semantics), uri) |> Utils.ok()
+    Utility.Convert.from(get_scope(semantics), uri) |> Utils.ok()
   end
 
   def parse_action(semantics, ability_str) do
     ability = get_ability(semantics)
-    Utility.from(ability, ability_str) |> Utils.ok()
+    Utility.Convert.from(ability, ability_str) |> Utils.ok()
   end
 
   def extract_did(_semantics, path) do

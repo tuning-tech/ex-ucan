@@ -32,7 +32,7 @@ defmodule Ucan.Utils do
   def ok(_), do: nil
 end
 
-defprotocol Ucan.Utility do
+defprotocol Ucan.Utility.Convert do
   @doc """
   Takes any value and convert it to `{:ok, t()} | {:error, term()}`
   """

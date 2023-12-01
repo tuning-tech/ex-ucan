@@ -170,7 +170,7 @@ defmodule Ucan.Builder do
       {:ok, cid} ->
         builder = %{builder | proofs: [cid | builder.proofs]}
         proof_index = length(builder.proofs) - 1
-        proof_delegation = ProofDelegationSemantics.new()
+        proof_delegation = %ProofDelegationSemantics{}
 
         case Semantics.parse(proof_delegation, "prf:#{proof_index}", "ucan/DELEGATE", nil) do
           %View{} = cap_view ->
