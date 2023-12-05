@@ -12,6 +12,8 @@ defmodule Ucan.ProofChains do
   alias Ucan.Token
   alias Ucan
 
+  require IEx
+
   @type t :: %__MODULE__{
           ucan: Ucan.t(),
           proofs: list(__MODULE__.t()),
@@ -90,9 +92,10 @@ defmodule Ucan.ProofChains do
     end
   end
 
+  # Is this return type good??
   @spec create_redelegations(Ucan.t(), list(__MODULE__.t())) :: list() | {:error, String.t()}
-  defp create_redelegations(%Ucan{} = ucan, proof_chains) do
-    proof_delegation_semantics = ProofDelegationSemantics.new()
+  defp create_redelegations(%Ucan{} = ucan, proof_chains) when is_list(proof_chains) do
+    proof_delegation_semantics = %ProofDelegationSemantics{}
 
     Ucan.capabilities(ucan)
     |> Capabilities.map_to_sequence()
@@ -110,7 +113,7 @@ defmodule Ucan.ProofChains do
           if index < length(proof_chains) do
             {:cont, :ordsets.add_element(index, redelegations)}
           else
-            {:halt, {:error, "Unable to redelgate proof; no proof at zero based index #{index}"}}
+            {:halt, {:error, "Unable to redelegate proof; no proof at zero based index #{index}"}}
           end
 
         %View{

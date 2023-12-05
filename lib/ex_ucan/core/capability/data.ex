@@ -75,7 +75,8 @@ defmodule Ucan.Capabilities do
             cap_list
 
           {ability, [caveat]}, cap_list ->
-            cap_list ++ [Capability.new(resource, ability, caveat)]
+            # to_string? - %"prf:2": "val"}, here "prf:2" is an atom :"prf", rather than string
+            cap_list ++ [Capability.new(to_string(resource), to_string(ability), caveat)]
         end)
     end)
   end
