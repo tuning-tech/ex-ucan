@@ -49,7 +49,7 @@ defmodule SemanticsTest do
     assert %ResourceUri{type: %Scoped{scope: %ProofSelection{type: %Index{value: 4}}}} =
              Capability.Semantics.parse_resource(semantics, URI.parse("prf:4"))
 
-    assert {:error, _} = Capability.Semantics.parse_capability(semantics, cap_foo)
+    assert nil == Capability.Semantics.parse_capability(semantics, cap_foo)
 
     %View{} = Capability.Semantics.parse_capability(semantics, cap_bar)
   end

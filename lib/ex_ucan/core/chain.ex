@@ -29,7 +29,8 @@ defmodule Ucan.ProofChains do
 
     with :ok <- Token.validate(ucan),
          {:ok, prf_chains} <- create_proof_chains(ucan, store),
-         redelegations when is_list(redelegations) <- create_redelegations(ucan, prf_chains) do
+         redelegations when is_list(redelegations) <-
+           create_redelegations(ucan, prf_chains) do
       {:ok,
        %__MODULE__{
          ucan: ucan,
@@ -128,7 +129,7 @@ defmodule Ucan.ProofChains do
           end)
 
         _ ->
-          redelegations
+          {:cont, redelegations}
       end
     end)
   end

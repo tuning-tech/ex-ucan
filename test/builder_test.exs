@@ -276,7 +276,7 @@ defmodule BuilderTest do
     assert next_ucan.payload.prf == [Token.to_cid!(ucan, :blake3)]
   end
 
-  @tag :delegate
+  @tag :delegate_2
   test "delegating_from", meta do
     cap = Capability.new("example://bar", "ability/bar", Jason.encode!(%{"beep" => 1}))
 

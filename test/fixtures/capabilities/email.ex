@@ -77,8 +77,12 @@ end
 
 defmodule Ucan.EmailSemantics do
   @moduledoc """
-  EmailSemantics can implement Capability.Semantics protocol, or go with the
-  default implementations. If we are going with default implmentations
+  Capability semantics for email
+
+  EmailSemantics can implement `Capability.Semantics` protocol, or go with the
+  default implementations.
+
+  If we are going with default implmentations
   The semantics struct should have a `scope` and `ability` field
   """
 

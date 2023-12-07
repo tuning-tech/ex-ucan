@@ -248,12 +248,8 @@ defimpl Ucan.Capability.Semantics, for: Any do
           %Resource{type: %My{kind: parse_resource(semantics, uri)}}
 
         "as" ->
-          case extract_did(semantics, uri.path) do
-            {did, resource} ->
-              %Resource{type: %As{did: did, kind: parse_resource(semantics, URI.parse(resource))}}
-
-            _ ->
-              {:error, "Unable to extract DID"}
+          with {did, resource} <- extract_did(semantics, uri.path) do
+            %Resource{type: %As{did: did, kind: parse_resource(semantics, URI.parse(resource))}}
           end
 
         _ ->
@@ -261,9 +257,8 @@ defimpl Ucan.Capability.Semantics, for: Any do
       end
 
     cap_ability =
-      case parse_action(semantics, ability) do
-        nil -> {:error, "Failed to parse ability"}
-        ability -> ability
+      with %_{} = ability <- parse_action(semantics, ability) do
+        ability
       end
 
     cap_caveat = parse_caveat(semantics, caveat)
