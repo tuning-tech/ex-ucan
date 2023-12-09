@@ -106,6 +106,19 @@ defmodule Ucan.Capability.Resource do
   end
 end
 
+defmodule Ucan.CapabilityInfo do
+  @moduledoc false
+  alias Ucan.Capability
+
+  @type t :: %__MODULE__{
+    capability: Capability.View,
+    originators: list(String.t()),
+    not_before: integer(),
+    expires_at: integer()
+  }
+  defstruct [:capability, originators: [], not_before: nil, expires_at: nil]
+end
+
 defmodule Ucan.Capability.View do
   alias Ucan.Capability.Scope
   alias Ucan.Capability.Caveats

@@ -88,6 +88,12 @@ defmodule Ucan do
     ucan.payload.iss
   end
 
+  @spec not_before(__MODULE__.t()) :: integer()
+  def not_before(%Ucan{payload: nbf}), do: nbf
+
+  @spec expires_at(__MODULE__.t()) :: integer()
+  def expires_at(%Ucan{payload: exp}), do: exp
+
   @spec capabilities(__MODULE__.t()) :: Capabilities.t()
   def capabilities(ucan) do
     ucan.payload.cap

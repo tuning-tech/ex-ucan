@@ -1,4 +1,6 @@
+
 defmodule Ucan.ProofChains do
+  alias Ucan.CapabilityInfo
   alias Ucan.ProofSelection
   alias Ucan.ProofSelection.Index
   alias Ucan.Capability.ResourceUri.Scoped
@@ -54,6 +56,43 @@ defmodule Ucan.ProofChains do
     with {:ok, token} <- UcanStore.read(store, cid) do
       from_token_string(token, store)
     end
+  end
+
+  @spec reduce_capabilities(__MODULE__.t(), Semantics.t()) :: list(CapabilityInfo.t())
+  def reduce_capabilities(%__MODULE__{} = chain, %_{} = semantics) do
+    # get ancestral attentuations or inherited attenuations, excluding redelegations
+
+    ancestral_capability_infos = Enum.with_index(chain)
+    |> Enum.flat_map(fn {index, %__MODULE__{} = ancestor_chain} ->
+      if index in ancestor_chain.redelegations do
+        []
+      else
+        reduce_capabilities(ancestor_chain, semantics)
+      end
+    end)
+
+    # get redelegated caps by prf resource
+
+    redelegated_capability_infos = chain.redelegations
+    |> Enum.flat_map(fn index ->
+      Enum.at(chain.proofs, index)
+      |> reduce_capabilities(semantics)
+      |> Enum.map(fn %CapabilityInfo{} = cap_info ->
+        %CapabilityInfo{
+          originators: cap_info.originators,
+          capability: cap_info.capability,
+          not_before: Ucan.not_before(chain.ucan),
+          expires_at: Ucan.expires_at(chain.ucan)
+        }
+      end)
+    end)
+
+    # cross-checking the claimed caps with ancestor's
+
+
+    # merge all these caps into one , non-redundant (prolly)
+
+
   end
 
   @spec validate_link_to(__MODULE__.t(), Ucan.t()) :: :ok | {:error, String.t()}
