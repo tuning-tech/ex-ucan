@@ -111,11 +111,11 @@ defmodule Ucan.CapabilityInfo do
   alias Ucan.Capability
 
   @type t :: %__MODULE__{
-    capability: Capability.View,
-    originators: list(String.t()),
-    not_before: integer(),
-    expires_at: integer()
-  }
+          capability: Capability.View,
+          originators: list(String.t()),
+          not_before: integer(),
+          expires_at: integer()
+        }
   defstruct [:capability, originators: [], not_before: nil, expires_at: nil]
 end
 
