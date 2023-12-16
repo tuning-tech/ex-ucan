@@ -9,6 +9,7 @@ defmodule Ucan.Capability do
   @type t :: %__MODULE__{
           resource: String.t(),
           ability: String.t(),
+          # Any `Jason.decode` value
           caveat: any()
         }
 
@@ -74,8 +75,10 @@ defmodule Ucan.Capabilities do
           {_ability, []}, cap_list ->
             cap_list
 
-          {ability, [caveat]}, cap_list ->
-            cap_list ++ [Capability.new(resource, ability, caveat)]
+          {ability, caveats}, cap_list ->
+            # to_string? - %"prf:2": "val"}, here "prf:2" is an atom :"prf", rather than string
+            cap_list ++
+              Enum.map(caveats, &Capability.new(to_string(resource), to_string(ability), &1))
         end)
     end)
   end
@@ -88,9 +91,22 @@ defmodule Ucan.Capabilities do
   @spec sequence_to_map(list(Capability.t())) :: {:ok, map()} | {:error, String.t()}
   def sequence_to_map(capabilites) do
     capabilites
-    |> Enum.reduce(%{}, fn %Capability{} = cap, caps ->
-      Map.update(caps, cap.resource, %{cap.ability => transform_caveats(cap.caveat)}, fn val ->
-        Map.put(val, cap.ability, transform_caveats(cap.caveat))
+    |> Enum.reduce(%{}, fn %Capability{} = cap, cap_map ->
+      Map.update(cap_map, cap.resource, %{cap.ability => transform_caveats(cap.caveat)}, fn val ->
+        cond do
+          # ignoring duplicate abilities, caveats pair
+          cap.ability in Map.keys(val) and val[cap.ability] == [cap.caveat] ->
+            val
+
+          # Appending different caveats under same ability
+          cap.ability in Map.keys(val) ->
+            caveats = val[cap.ability]
+            Map.put(val, cap.ability, caveats ++ [cap.caveat])
+
+          # adding unique ability under same resource
+          true ->
+            Map.put(val, cap.ability, transform_caveats(cap.caveat))
+        end
       end)
     end)
     |> validate_resources()

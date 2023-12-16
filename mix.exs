@@ -10,6 +10,7 @@ defmodule ExUcan.MixProject do
       deps: deps(),
       aliases: aliases(),
       consolidate_protocols: Mix.env() != :test,
+      elixirc_paths: elixirc_paths(Mix.env()),
       test_coverage: [
         summary: [
           threshold: 80
@@ -50,4 +51,6 @@ defmodule ExUcan.MixProject do
     ]
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/fixtures"]
+  defp elixirc_paths(_), do: ["lib"]
 end

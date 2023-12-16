@@ -154,7 +154,13 @@ defmodule Ucan.Builder do
   implicitly by ownership of the resource by this UCAN's issuer
   """
   @spec claiming_capability(__MODULE__.t(), Capability.t()) :: __MODULE__.t()
-  def claiming_capability(builder, capability) do
+  def claiming_capability(builder, %Capability{} = capability) do
+    %{builder | capabilities: builder.capabilities ++ [capability]}
+  end
+
+  @spec claiming_capability(__MODULE__.t(), Capability.View.t()) :: __MODULE__.t()
+  def claiming_capability(builder, %Capability.View{} = capability_view) do
+    capability = Capability.new(capability_view)
     %{builder | capabilities: builder.capabilities ++ [capability]}
   end
 
@@ -170,7 +176,7 @@ defmodule Ucan.Builder do
       {:ok, cid} ->
         builder = %{builder | proofs: [cid | builder.proofs]}
         proof_index = length(builder.proofs) - 1
-        proof_delegation = ProofDelegationSemantics.new()
+        proof_delegation = %ProofDelegationSemantics{}
 
         case Semantics.parse(proof_delegation, "prf:#{proof_index}", "ucan/DELEGATE", nil) do
           %View{} = cap_view ->

@@ -4,13 +4,14 @@ defmodule CapabilityTest do
   alias Ucan.Capability.Caveats
   use ExUnit.Case
 
-  @tag :caps
+  @tag :capz
   test "can_cast_between_map_and_sequence" do
     cap_foo = Capability.new("example//foo", "ability/foo", Jason.encode!(%{}))
     assert cap_foo.caveat == %{}
     cap_bar = Capability.new("example://bar", "ability/bar", Jason.encode!(%{"beep" => 1}))
+    cap_bar_2 = Capability.new("example://bar", "ability/bar", Jason.encode!(%{"boop" => 1}))
 
-    cap_sequence = [cap_foo, cap_bar]
+    cap_sequence = [cap_foo, cap_bar, cap_bar_2]
 
     {:ok, cap_maps} = Capabilities.sequence_to_map(cap_sequence)
     assert Capabilities.map_to_sequence(cap_maps) == cap_sequence
@@ -100,7 +101,7 @@ defmodule CapabilityTest do
     assert [_ | _] = Capabilities.map_to_sequence(capabilities)
   end
 
-  @tag :caps
+  @tag :cap_fix
   test "sequence_to_map with multiple abilities for a resource" do
     cap_1 = Capability.new("example://bar", "ability/bar", %{})
     cap_2 = Capability.new("example://bar", "ability/foo", %{})
@@ -143,9 +144,9 @@ defmodule CapabilityTest do
   @tag :caveat
   test "caveats from/1" do
     cases = [
-      {1, "Caveat is not JSON string", :fail},
-      {"{-", "Not a valid JSON", :fail},
-      {"1", "Caveat must be a map", :fail},
+      {1, "Caveat must be a JSON string or map, got 1", :fail},
+      {"{-", "Not a valid JSON, got {-", :fail},
+      {"1", "Caveat must be a map, got 1", :fail},
       {Jason.encode!(%{a: :b}), "Caveat is a map", :success}
     ]
 

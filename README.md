@@ -180,7 +180,7 @@ Ucan.validate_token(token)
 
 
 ```elixir
-cap = Ucan.Core.Capability.new("example://bar", "ability/bar", %{"beep" => 1})
+cap = Ucan.Capability.new("example://bar", "ability/bar", %{"beep" => 1})
 
 # where resource - example://bar", ability - "ability/bar" and caveat - %{"beep" => 1}
 # This should be the only capability the receiver or `aud` of UCAN can do. We can add this capability in the ucan builder flow as
@@ -202,7 +202,7 @@ iex> ucan_payload =
   nnc: nil,
   fct: %{},
   cap: [
-    %Ucan.Core.Capability{
+    %Ucan.Capability{
       resource: "example://bar",
       ability: "ability/bar",
       caveat: %{"beep" => 1}

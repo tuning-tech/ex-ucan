@@ -1,5 +1,5 @@
 defprotocol Ucan.Capability.Scope do
-  @spec contains?(Scope, any()) :: boolean()
+  @spec contains?(t(), t()) :: boolean()
   def contains?(scope, other_scope)
 end
 
@@ -18,6 +18,8 @@ defmodule Ucan.Capability.ResourceUri do
   defstruct [:type]
 
   defimpl Ucan.Capability.Scope do
+    alias Ucan.Capability.Scope
+
     def contains?(resource_uri, other_resource_uri) do
       case resource_uri.type do
         :unscoped ->
@@ -26,7 +28,7 @@ defmodule Ucan.Capability.ResourceUri do
         %Scoped{scope: scope} ->
           case other_resource_uri.type do
             %Scoped{scope: other_resource_scope} ->
-              contains?(scope, other_resource_scope)
+              Scope.contains?(scope, other_resource_scope)
 
             _ ->
               false
@@ -81,16 +83,18 @@ defmodule Ucan.Capability.Resource do
   defstruct [:type]
 
   defimpl Ucan.Capability.Scope do
+    alias Ucan.Capability.Scope
+
     def contains?(resource, other_resource) do
       case {resource, other_resource} do
         {%{type: %ResourceType{kind: res}}, %{type: %ResourceType{kind: other_res}}} ->
-          contains?(res, other_res)
+          Scope.contains?(res, other_res)
 
         {%{type: %My{kind: res}}, %{type: %My{kind: other_res}}} ->
-          contains?(res, other_res)
+          Scope.contains?(res, other_res)
 
         {%{type: %As{did: did, kind: res}}, %{type: %As{did: other_did, kind: other_res}}} ->
-          if did == other_did, do: contains?(res, other_res), else: false
+          if did == other_did, do: Scope.contains?(res, other_res), else: false
       end
     end
   end
@@ -106,7 +110,21 @@ defmodule Ucan.Capability.Resource do
   end
 end
 
+defmodule Ucan.CapabilityInfo do
+  @moduledoc false
+  alias Ucan.Capability
+
+  @type t :: %__MODULE__{
+          capability: Capability.View,
+          originators: list(String.t()),
+          not_before: integer(),
+          expires_at: integer()
+        }
+  defstruct [:capability, originators: [], not_before: nil, expires_at: nil]
+end
+
 defmodule Ucan.Capability.View do
+  alias Ucan.Utility.PartialOrder
   alias Ucan.Capability.Scope
   alias Ucan.Capability.Caveats
   alias Ucan.Capability.Resource
@@ -142,7 +160,8 @@ defmodule Ucan.Capability.View do
     case {Caveats.from(cap_view.caveat), Caveats.from(other_cap_view.caveat)} do
       {{:ok, caveat}, {:ok, other_caveat}} ->
         Scope.contains?(cap_view.resource, other_cap_view.resource) and
-          cap_view.ability >= other_cap_view.ability and
+          (PartialOrder.compare(cap_view.ability, other_cap_view.ability) == :gt or
+             PartialOrder.compare(cap_view.ability, other_cap_view.ability) == :eq) and
           Caveats.enables?(caveat, other_caveat)
 
       _ ->
@@ -207,12 +226,12 @@ defimpl Ucan.Capability.Semantics, for: Any do
   end
 
   def parse_scope(semantics, uri) do
-    Utility.from(get_scope(semantics), uri) |> Utils.ok()
+    Utility.Convert.from(get_scope(semantics), uri) |> Utils.ok()
   end
 
   def parse_action(semantics, ability_str) do
     ability = get_ability(semantics)
-    Utility.from(ability, ability_str) |> Utils.ok()
+    Utility.Convert.from(ability, ability_str) |> Utils.ok()
   end
 
   def extract_did(_semantics, path) do
@@ -248,12 +267,8 @@ defimpl Ucan.Capability.Semantics, for: Any do
           %Resource{type: %My{kind: parse_resource(semantics, uri)}}
 
         "as" ->
-          case extract_did(semantics, uri.path) do
-            {did, resource} ->
-              %Resource{type: %As{did: did, kind: parse_resource(semantics, URI.parse(resource))}}
-
-            _ ->
-              {:error, "Unable to extract DID"}
+          with {did, resource} <- extract_did(semantics, uri.path) do
+            %Resource{type: %As{did: did, kind: parse_resource(semantics, URI.parse(resource))}}
           end
 
         _ ->
@@ -261,9 +276,8 @@ defimpl Ucan.Capability.Semantics, for: Any do
       end
 
     cap_ability =
-      case parse_action(semantics, ability) do
-        nil -> {:error, "Failed to parse ability"}
-        ability -> ability
+      with %_{} = ability <- parse_action(semantics, ability) do
+        ability
       end
 
     cap_caveat = parse_caveat(semantics, caveat)

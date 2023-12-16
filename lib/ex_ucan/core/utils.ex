@@ -32,10 +32,15 @@ defmodule Ucan.Utils do
   def ok(_), do: nil
 end
 
-defprotocol Ucan.Utility do
+defprotocol Ucan.Utility.Convert do
   @doc """
   Takes any value and convert it to `{:ok, t()} | {:error, term()}`
   """
   @spec from(t(), URI.t() | String.t() | any()) :: {:ok, t()} | {:error, term()}
   def from(scope, value)
+end
+
+defprotocol Ucan.Utility.PartialOrder do
+  @spec compare(t(), t()) :: :gt | :lt | :eq
+  def compare(term_1, term_2)
 end

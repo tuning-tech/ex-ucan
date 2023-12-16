@@ -19,7 +19,7 @@ defmodule Ucan.ProofSelection do
     end
   end
 
-  defimpl Ucan.Utility do
+  defimpl Ucan.Utility.Convert do
     @spec from(Scope, URI.t() | String.t()) :: {:ok, Scope} | {:error, String.t()}
     def from(_scope, %URI{} = value) do
       case value.scheme do
@@ -56,7 +56,7 @@ defmodule Ucan.ProofAction do
   @type t :: %__MODULE__{type: :delegate}
   defstruct type: :delegate
 
-  defimpl Ucan.Utility do
+  defimpl Ucan.Utility.Convert do
     alias Ucan.ProofAction
 
     def from(_ability, value) do
@@ -75,16 +75,33 @@ defmodule Ucan.ProofAction do
       end
     end
   end
+
+  defimpl Ucan.Utility.PartialOrder do
+    alias Ucan.ProofAction
+
+    @proof_action_order %{
+      delegate: 0
+    }
+    def compare(%ProofAction{} = ability, %ProofAction{} = other_ability) do
+      case {@proof_action_order[ability.type], @proof_action_order[other_ability.type]} do
+        {order_a, order_a} -> :eq
+        {order_a, order_b} when order_a > order_b -> :gt
+        _ -> :lt
+      end
+    end
+  end
 end
 
 defmodule Ucan.ProofDelegationSemantics do
+  alias Ucan.ProofAction
+  alias Ucan.ProofSelection
   alias Ucan.ProofSelection.Index
   # implement Capability.Semantics protocol
   @type t :: %__MODULE__{
           scope: Ucan.ProofSelection.t(),
           ability: Ucan.ProofAction.t()
         }
-  defstruct [:scope, :ability]
+  defstruct scope: %ProofSelection{}, ability: %ProofAction{}
 
   # TODO: doc
   @spec new(integer()) :: __MODULE__.t()
