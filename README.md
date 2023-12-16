@@ -19,6 +19,7 @@
     - [Generating UCAN](#generating-ucan)
     - [Validating UCAN](#validating-ucan)
     - [Adding Capabilities](#adding-capabilities)
+    - [Reducing Capabilities](#reducing-capabilities)
 5. [Roadmap](#roadmap)
 
 ## About
@@ -75,7 +76,7 @@ Peer-to-peer
 ```elixir
 def deps do
   [
-    {:ucan, git: "https://github.com/spawnfest/youcan.git"}
+    {:ucan, git: "https://github.com/tuning-tech/ex-ucan.git"}
   ]
 end
 ```
@@ -212,9 +213,25 @@ iex> ucan_payload =
 }
 ```
 
+### Reducing Capabilities
+
+Given a UCAN, we can create a ProofChain which parses the token and the capabilities they grant via
+their issuer and/or witnessing proofs.
+
+
+```elixir
+
+email_semantics = %EmailSemantics{}
+
+{:ok, prf_chain} = Ucan.ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+
+capability_infos = Ucan.ProofChains.reduce_capabilities(prf_chain, email_semantics)
+
+```
+
 ## Roadmap
 
-The library is no-where feature parity with ucan [rust](https://github.com/ucan-wg/rs-ucan/tree/main) library or with the spec. The spec itself is nearing a 1.0.0, and is under-review.
+The library is onfeature parity with ucan [rust](https://github.com/ucan-wg/rs-ucan/tree/main) library. The spec itself is nearing a 1.0.0, and is under-review.
 But good thing is we have now laid the basic foundations. The next immediate additions would be,
 
 - [X] Proof encodings as CID (Content Addressable Data)
