@@ -143,6 +143,11 @@ defmodule AttenuationTest do
       |> Builder.build!()
       |> Ucan.sign(meta.mallory_keypair)
 
+    IO.inspect("leaf alice did #{Keymaterial.get_did(meta.alice_keypair)}")
+    IO.inspect("leaf bob did #{Keymaterial.get_did(meta.bob_keypair)}")
+
+    IO.inspect(ucan)
+
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_bob))
 
