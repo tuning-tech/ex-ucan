@@ -73,6 +73,20 @@ defmodule Ucan.EmailAction do
       end
     end
   end
+
+  defimpl Ucan.Utility.PartialOrder do
+    alias Ucan.EmailAction
+    @email_action_order %{
+      send: 0
+    }
+    def compare(%EmailAction{} = ability, %EmailAction{} = other_ability) do
+      case {@email_action_order[ability.type], @email_action_order[other_ability.type]} do
+        {order_a, order_a} -> :eq
+        {order_a, order_b} when order_a > order_b -> :gt
+        _ -> :lt
+      end
+    end
+  end
 end
 
 defmodule Ucan.EmailSemantics do

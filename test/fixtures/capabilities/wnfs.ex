@@ -110,6 +110,24 @@ defmodule Ucan.WnfsCapLevel do
       end
     end
   end
+
+  defimpl Ucan.Utility.PartialOrder do
+    alias Ucan.WnfsCapLevel
+    @wnfs_cap_order %{
+        create: 0,
+        revise: 1,
+        softdelete: 2,
+        overwrite: 3,
+        superuser: 4
+    }
+    def compare(%WnfsCapLevel{} = ability, %WnfsCapLevel{} = other_ability) do
+      case {@wnfs_cap_order[ability.type], @wnfs_cap_order[other_ability.type]} do
+        {order_a, order_a} -> :eq
+        {order_a, order_b} when order_a > order_b -> :gt
+        _ -> :lt
+      end
+    end
+  end
 end
 
 defmodule Ucan.WnfsSemantics do

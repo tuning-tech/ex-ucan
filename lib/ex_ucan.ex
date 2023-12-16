@@ -89,10 +89,10 @@ defmodule Ucan do
   end
 
   @spec not_before(__MODULE__.t()) :: integer()
-  def not_before(%Ucan{payload: nbf}), do: nbf
+  def not_before(%Ucan{payload: %UcanPayload{nbf: nbf}}), do: nbf
 
   @spec expires_at(__MODULE__.t()) :: integer()
-  def expires_at(%Ucan{payload: exp}), do: exp
+  def expires_at(%Ucan{payload: %UcanPayload{exp: exp}}), do: exp
 
   @spec capabilities(__MODULE__.t()) :: Capabilities.t()
   def capabilities(ucan) do

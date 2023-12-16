@@ -75,6 +75,21 @@ defmodule Ucan.ProofAction do
       end
     end
   end
+
+  defimpl Ucan.Utility.PartialOrder do
+    alias Ucan.ProofAction
+
+    @proof_action_order %{
+      delegate: 0
+    }
+    def compare(%ProofAction{} = ability, %ProofAction{} = other_ability) do
+      case {@proof_action_order[ability.type], @proof_action_order[other_ability.type]} do
+        {order_a, order_a} -> :eq
+        {order_a, order_b} when order_a > order_b -> :gt
+        _ -> :lt
+      end
+    end
+  end
 end
 
 defmodule Ucan.ProofDelegationSemantics do

@@ -39,3 +39,8 @@ defprotocol Ucan.Utility.Convert do
   @spec from(t(), URI.t() | String.t() | any()) :: {:ok, t()} | {:error, term()}
   def from(scope, value)
 end
+
+defprotocol Ucan.Utility.PartialOrder do
+  @spec compare(t(), t()) :: :gt | :lt | :eq
+  def compare(term_1, term_2)
+end

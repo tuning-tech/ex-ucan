@@ -37,12 +37,16 @@ defmodule Ucan.Capability.Caveats do
          true <- is_map(val) do
       {:ok, val}
     else
-      {:error, _} -> {:error, "Not a valid JSON"}
-      _ -> {:error, "Caveat must be a map"}
+      {:error, _} -> {:error, "Not a valid JSON, got #{value}"}
+      _ -> {:error, "Caveat must be a map, got #{value}"}
     end
   end
 
-  def from(_), do: {:error, "Caveat is not JSON string"}
+  def from(%{} = value) do
+    {:ok, value}
+  end
+
+  def from(value), do: {:error, "Caveat must be a JSON string or map, got #{inspect(value)}"}
 
   # A should be a subset of B
   defp satisfy_subset?(caveat_b, k, v) do
