@@ -62,7 +62,7 @@ defmodule AttenuationTest do
     assert [Keymaterial.get_did(meta.alice_keypair)] == info.originators
   end
 
-  @tag :atten
+  @tag :atten_neo
   test "it reports the first issuer in the chain as the originator", meta do
     email_semantics = %EmailSemantics{}
 
