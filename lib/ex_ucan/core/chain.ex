@@ -13,8 +13,6 @@ defmodule Ucan.ProofChains do
   alias Ucan.Token
   alias Ucan
 
-  require IEx
-
   @type t :: %__MODULE__{
           ucan: Ucan.t(),
           proofs: list(__MODULE__.t()),
@@ -62,8 +60,7 @@ defmodule Ucan.ProofChains do
   """
   @spec reduce_capabilities(__MODULE__.t(), Semantics.t()) :: list(CapabilityInfo.t())
   def reduce_capabilities(%__MODULE__{} = chain, %_{} = semantics) do
-    # get ancestral attentuations or inherited attenuations, excluding redelegations
-
+    # get ancestral attentuations , excluding redelegations
     ancestral_capability_infos = get_ancestral_capability_infos(chain, semantics)
 
     # get redelegated caps by prf resource
@@ -97,18 +94,14 @@ defmodule Ucan.ProofChains do
         # try to find the originators from the ancestral cap_infos..
         self_capability_stream
         |> Enum.map(fn %Capability.View{} = capability_view ->
-          case find_ancestral_originators(ancestral_capability_infos, capability_view) do
-            [] -> [Ucan.issuer(chain.ucan)]
-            originators -> originators
-          end
-          |> then(
-            &%CapabilityInfo{
-              originators: &1,
-              capability: capability_view,
-              not_before: Ucan.not_before(chain.ucan),
-              expires_at: Ucan.expires_at(chain.ucan)
-            }
-          )
+          %CapabilityInfo{
+            originators:
+              find_ancestral_originators(ancestral_capability_infos, capability_view) ||
+                [Ucan.issuer(chain.ucan)],
+            capability: capability_view,
+            not_before: Ucan.not_before(chain.ucan),
+            expires_at: Ucan.expires_at(chain.ucan)
+          }
         end)
       end
 
@@ -118,43 +111,6 @@ defmodule Ucan.ProofChains do
     # merge all these caps into one , non-redundant (prolly)
     # ensuring discrete orignators
     merge_capabilities(self_capability_infos)
-  end
-
-  # We could say `last_cap_info` was the last element in `self_capability_infos` list
-  @spec consolidate_capability_info(list(CapabilityInfo.t()), CapabilityInfo.t()) ::
-          {list(CapabilityInfo.t()), consolidated? :: boolean()}
-  defp consolidate_capability_info(remaining_cap_infos, %CapabilityInfo{} = last_cap_info)
-       when is_list(remaining_cap_infos) do
-    Enum.reduce_while(
-      remaining_cap_infos,
-      # {current_index, remaingin_cap_info, consolidated}
-      {-1, remaining_cap_infos, false},
-      fn %CapabilityInfo{} = remaining_cap_info, result ->
-        if Capability.View.enables?(remaining_cap_info.capability, last_cap_info.capability) do
-          # index is for knowing the current iterated remaingin_cap_info, so that we can replace it with
-          # the modified one.
-          {index, result_cap_infos, _consolidated?} = result
-
-          %{
-            remaining_cap_info
-            | originators:
-                :ordsets.union(
-                  remaining_cap_info.originators,
-                  last_cap_info.originators
-                )
-          }
-          # This kind of makes a new remaining_cap_info, by replacing the consolidated cap_info element only.
-          |> then(&List.replace_at(result_cap_infos, index + 1, &1))
-          |> then(&{index + 1, &1, true})
-          # Once we consolidated the last_cap_info, we can exit the loop, and send the new consolidate `remaining_cap_info` to the caller
-          |> then(&{:halt, &1})
-        else
-          {index, result_cap_infos, consolidated?} = result
-          {:cont, {index + 1, result_cap_infos, consolidated?}}
-        end
-      end
-    )
-    |> then(fn {_, result_cap_infos, consolidated?} -> {result_cap_infos, consolidated?} end)
   end
 
   @spec validate_link_to(__MODULE__.t(), Ucan.t()) :: :ok | {:error, String.t()}
@@ -211,12 +167,20 @@ defmodule Ucan.ProofChains do
               }
             }
           }
+        }
+        when index < length(proof_chains) ->
+          {:cont, :ordsets.add_element(index, redelegations)}
+
+        %Capability.View{
+          resource: %Resource{
+            type: %ResourceType{
+              kind: %ResourceUri{
+                type: %Scoped{scope: %ProofSelection{type: %Index{value: index}}}
+              }
+            }
+          }
         } ->
-          if index < length(proof_chains) do
-            {:cont, :ordsets.add_element(index, redelegations)}
-          else
-            {:halt, {:error, "Unable to redelegate proof; no proof at zero based index #{index}"}}
-          end
+          {:halt, {:error, "Unable to redelegate proof; no proof at zero based index #{index}"}}
 
         %Capability.View{
           resource: %Resource{
@@ -225,9 +189,7 @@ defmodule Ucan.ProofChains do
             }
           }
         } ->
-          Enum.reduce(0..length(proof_chains), redelegations, fn index, redelegations ->
-            {:cont, :ordsets.add_element(index, redelegations)}
-          end)
+          {:cont, merge_redelegations(proof_chains, redelegations)}
 
         _ ->
           {:cont, redelegations}
@@ -265,7 +227,8 @@ defmodule Ucan.ProofChains do
     end)
   end
 
-  @spec find_ancestral_originators(list(CapabilityInfo.t()), Capability.View) :: list(String.t())
+  @spec find_ancestral_originators(list(CapabilityInfo.t()), Capability.View) ::
+          list(String.t()) | nil
   defp find_ancestral_originators(
          ancestral_capability_infos,
          %Capability.View{} = self_capability_view
@@ -279,29 +242,85 @@ defmodule Ucan.ProofChains do
           originators
         end
     end)
+    |> case do
+      [] -> nil
+      originators -> originators
+    end
   end
 
+  @spec merge_capabilities(list(CapabilityInfo.t())) :: list(CapabilityInfo.t())
+  defp merge_capabilities([]), do: []
+
+  # Merge capability infos that can be `enabled` by other capability infos.
+  # by taking the originators from the redundant cap_info and merging them with
+  # the originators of parent/higher cap_info
   defp merge_capabilities(self_capability_infos) do
-    Enum.reduce(
-      Enum.reverse(self_capability_infos),
-      {[], self_capability_infos},
-      fn %CapabilityInfo{} = last_cap_info, merge_cap_info_tuple ->
-        {_, remaining_cap_infos} = merge_cap_info_tuple
-        # we don't need the last element, since we are going to operate against it.
-        remaining_cap_infos = Enum.slice(remaining_cap_infos, 0, length(remaining_cap_infos) - 1)
+    self_capability_infos
+    |> Enum.reduce({[], self_capability_infos}, fn _, acc ->
+      {_merged_cap_infos, remaining_cap_infos} = acc
 
-        case consolidate_capability_info(remaining_cap_infos, last_cap_info) do
-          {resulting_cap_info, false} ->
-            {merge_cap_list, _remaining_cap_info} = merge_cap_info_tuple
+      last_cap_info = Enum.take(remaining_cap_infos, -1) |> List.first()
 
-            {merge_cap_list ++ [last_cap_info], resulting_cap_info}
+      # we don't need the last element, since we are going to operate against it.
+      remaining_cap_infos = Enum.slice(remaining_cap_infos, 0, length(remaining_cap_infos) - 1)
 
-          {resulting_cap_info, true} ->
-            {merge_cap_list, _remaining_cap_info} = merge_cap_info_tuple
-            {merge_cap_list, resulting_cap_info}
+      case consolidate_capability_info(remaining_cap_infos, last_cap_info) do
+        {consolidated_cap_info, false} ->
+          {merged_cap_infos, _remaining_cap_info} = acc
+          # if last_cap_info was not consolidated, then that means it is unique and should
+          # be added to the final merged list
+          {merged_cap_infos ++ [last_cap_info], consolidated_cap_info}
+
+        {consolidated_cap_info, true} ->
+          {merged_cap_infos, _remaining_cap_info} = acc
+          # if last_cap_info was consolidated into `consolidated_cap_info`, then we won't
+          # add it to the merged_cap_infos.
+          {merged_cap_infos, consolidated_cap_info}
+      end
+    end)
+    |> then(fn {merged_cap_infos, _consolidated_cap_infos} -> merged_cap_infos end)
+  end
+
+  # We could say `last_cap_info` was the last element in `self_capability_infos` list
+  @spec consolidate_capability_info(list(CapabilityInfo.t()), CapabilityInfo.t()) ::
+          {list(CapabilityInfo.t()), consolidated? :: boolean()}
+
+  defp consolidate_capability_info([], _), do: {[], false}
+
+  defp consolidate_capability_info(remaining_cap_infos, %CapabilityInfo{} = last_cap_info)
+       when is_list(remaining_cap_infos) do
+    Enum.reduce_while(
+      remaining_cap_infos,
+      # {current_index, remaingin_cap_info, consolidated}
+      {-1, remaining_cap_infos, false},
+      fn %CapabilityInfo{} = remaining_cap_info, acc ->
+        if Capability.View.enables?(remaining_cap_info.capability, last_cap_info.capability) do
+          # index is for knowing the current iterated remaingin_cap_info, so that we can replace it with
+          # the modified one.
+          {index, result_cap_infos, _consolidated?} = acc
+
+          %{
+            remaining_cap_info
+            | originators:
+                (remaining_cap_info.originators ++ last_cap_info.originators) |> Enum.uniq()
+          }
+          # This kind of makes a new remaining_cap_info, by replacing the consolidated cap_info element only.
+          |> then(&List.replace_at(result_cap_infos, index + 1, &1))
+          |> then(&{index + 1, &1, true})
+          # Once we consolidated the last_cap_info, we can exit the loop, and send the new consolidate `remaining_cap_info` to the caller
+          |> then(&{:halt, &1})
+        else
+          {index, result_cap_infos, consolidated?} = acc
+          {:cont, {index + 1, result_cap_infos, consolidated?}}
         end
       end
     )
-    |> then(fn {merge_cap_list, _resulting_cap_infos} -> merge_cap_list end)
+    |> then(fn {_, result_cap_infos, consolidated?} -> {result_cap_infos, consolidated?} end)
+  end
+
+  defp merge_redelegations(proof_chains, redelegations) do
+    Enum.reduce(0..length(proof_chains), redelegations, fn index, redelegations ->
+      :ordsets.add_element(index, redelegations)
+    end)
   end
 end

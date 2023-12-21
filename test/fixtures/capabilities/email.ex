@@ -51,7 +51,7 @@ defmodule Ucan.EmailAction do
   """
 
   @type t :: %__MODULE__{
-          type: :send
+          type: :send | :all
         }
   defstruct [:type]
 
@@ -59,6 +59,7 @@ defmodule Ucan.EmailAction do
     def to_string(action) do
       case action.type do
         :send -> "email/send"
+        :all -> "email/all"
       end
     end
   end
@@ -69,6 +70,7 @@ defmodule Ucan.EmailAction do
     def from(_action, value) do
       case value do
         "email/send" -> {:ok, %EmailAction{type: :send}}
+        "email/all" -> {:ok, %EmailAction{type: :all}}
         _ -> {:error, "Unrecognized action: #{}"}
       end
     end
@@ -77,7 +79,8 @@ defmodule Ucan.EmailAction do
   defimpl Ucan.Utility.PartialOrder do
     alias Ucan.EmailAction
     @email_action_order %{
-      send: 0
+      send: 0,
+      all: 1
     }
     def compare(%EmailAction{} = ability, %EmailAction{} = other_ability) do
       case {@email_action_order[ability.type], @email_action_order[other_ability.type]} do

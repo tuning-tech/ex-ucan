@@ -92,22 +92,12 @@ defmodule Ucan.Capabilities do
   def sequence_to_map(capabilites) do
     capabilites
     |> Enum.reduce(%{}, fn %Capability{} = cap, cap_map ->
-      Map.update(cap_map, cap.resource, %{cap.ability => transform_caveats(cap.caveat)}, fn val ->
-        cond do
-          # ignoring duplicate abilities, caveats pair
-          cap.ability in Map.keys(val) and val[cap.ability] == [cap.caveat] ->
-            val
-
-          # Appending different caveats under same ability
-          cap.ability in Map.keys(val) ->
-            caveats = val[cap.ability]
-            Map.put(val, cap.ability, caveats ++ [cap.caveat])
-
-          # adding unique ability under same resource
-          true ->
-            Map.put(val, cap.ability, transform_caveats(cap.caveat))
-        end
-      end)
+      Map.update(
+        cap_map,
+        cap.resource,
+        %{cap.ability => transform_caveats(cap.caveat)},
+        &update_capability(&1, cap)
+      )
     end)
     |> validate_resources()
   end
@@ -168,4 +158,22 @@ defmodule Ucan.Capabilities do
   @spec transform_caveats(any()) :: list()
   defp transform_caveats(caveats) when is_list(caveats), do: caveats
   defp transform_caveats(caveats), do: [caveats]
+
+  defp update_capability(%{} = ability, %Capability{} = capability) do
+    cond do
+      # ignoring duplicate abilities, caveats pair
+      capability.ability in Map.keys(ability) and
+          ability[capability.ability] == [capability.caveat] ->
+        ability
+
+      # Appending different caveats under same ability
+      capability.ability in Map.keys(ability) ->
+        caveats = ability[capability.ability]
+        Map.put(ability, capability.ability, caveats ++ [capability.caveat])
+
+      # adding unique ability under same resource
+      true ->
+        Map.put(ability, capability.ability, transform_caveats(capability.caveat))
+    end
+  end
 end

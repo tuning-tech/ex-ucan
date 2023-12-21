@@ -1,4 +1,5 @@
 defmodule UcanTest do
+  alias Ucan.WnfsCapLevel
   alias Ucan.Builder
   alias Ucan.Keymaterial.Ed25519.Keypair
   use ExUnit.Case

@@ -164,6 +164,11 @@ defmodule Ucan.Builder do
     %{builder | capabilities: builder.capabilities ++ [capability]}
   end
 
+  @spec claiming_capabilities(__MODULE__.t(), list(Capability)) :: __MODULE__.t()
+  def claiming_capabilities(builder, capabilities) when is_list(capabilities) do
+    %{builder | capabilities: builder.capabilities ++ capabilities}
+  end
+
   @doc """
   Delegate all capabilities from a given proof to the audience of the UCAN
   you're building.

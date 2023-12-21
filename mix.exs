@@ -18,7 +18,25 @@ defmodule ExUcan.MixProject do
         ignore_modules: [
           Ucan.Core.Structs.Ucan,
           Ucan.UcanHeader,
-          Ucan.UcanPayload
+          Ucan.UcanPayload,
+          Inspect.Ucan.Keymaterial.Ed25519.Keypair,
+          String.Chars.Ucan.WnfsCapLevel,
+          String.Chars.Ucan.WnfsScope,
+          Ucan.Capability.Resource,
+          Ucan.Capability.Resource.As,
+          Ucan.Capability.Resource.My,
+          Ucan.Capability.Resource.ResourceType,
+          Ucan.Capability.Scope.Ucan.ProofSelection,
+          Ucan.Capability.Scope.Ucan.WnfsScope,
+          Ucan.EmailAction,
+          Ucan.EmailAddress,
+          Ucan.Utility.Convert.Ucan.WnfsCapLevel,
+          Ucan.Utility.Convert.Ucan.WnfsScope,
+          Ucan.Utility.PartialOrder.Ucan.ProofAction,
+          Ucan.Utility.PartialOrder.Ucan.WnfsCapLevel,
+          Ucan.WnfsCapLevel,
+          Ucan.WnfsScope,
+          Ucan.WnfsSemantics
         ]
       ]
     ]
