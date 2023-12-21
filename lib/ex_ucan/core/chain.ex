@@ -246,6 +246,9 @@ defmodule Ucan.ProofChains do
   @spec merge_capabilities(list(CapabilityInfo.t())) :: list(CapabilityInfo.t())
   defp merge_capabilities([]), do: []
 
+  # Merge capability infos that can be `enabled` by other capability infos.
+  # by taking the originators from the redundant cap_info and merging them with
+  # the originators of parent/higher cap_info
   defp merge_capabilities(self_capability_infos) do
     self_capability_infos
     |> Enum.reduce({[], self_capability_infos}, fn _, acc ->

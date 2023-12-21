@@ -232,4 +232,130 @@ defmodule AttenuationTest do
              expires_at: Ucan.expires_at(ucan)
            }
   end
+
+  @tag :val_caveat
+  test "it validates caveats" do
+    resource = "mailto:alice@email.com"
+    ability = "email/send"
+
+    no_caveat = Capability.new(resource, ability, Jason.encode!(%{}))
+    x_caveat = Capability.new(resource, ability, Jason.encode!(%{x: true}))
+    y_caveat = Capability.new(resource, ability, Jason.encode!(%{y: true}))
+    z_caveat = Capability.new(resource, ability, Jason.encode!(%{z: true}))
+    yz_caveat = Capability.new(resource, ability, Jason.encode!(%{z: true, y: true}))
+
+    valid = [
+      {[no_caveat], [no_caveat]},
+      {[x_caveat], [x_caveat]},
+      {[no_caveat], [x_caveat]},
+      {[x_caveat, y_caveat], [x_caveat]},
+      {[x_caveat, y_caveat], [x_caveat, yz_caveat]}
+    ]
+
+    invalid = [
+      {[x_caveat], [no_caveat]},
+      {[x_caveat], [y_caveat]},
+      {[x_caveat, y_caveat], [x_caveat, y_caveat, z_caveat]}
+    ]
+
+    for {proof_caps, delegated_caps} <- valid do
+      is_success? = test_capabilities_delegation(proof_caps, delegated_caps)
+
+      assert(
+        is_success?,
+        "#{render_caveats(proof_caps)} enables #{render_caveats(delegated_caps)}"
+      )
+    end
+
+    for {proof_caps, delegated_caps} <- invalid do
+      is_success? = test_capabilities_delegation(proof_caps, delegated_caps)
+
+      assert(
+        not is_success?,
+        "#{render_caveats(proof_caps)} disallows #{render_caveats(delegated_caps)}"
+      )
+    end
+  end
+
+  @spec test_capabilities_delegation(list(Capability), list(Capability)) :: boolean()
+  defp test_capabilities_delegation(proof_capabilities, delegated_capabilities) do
+    alice_keypair = Ucan.create_default_keypair()
+    mallory_keypair = Ucan.create_default_keypair()
+
+    email_semantics = %EmailSemantics{}
+
+    proof_ucan =
+      Builder.default()
+      |> Builder.issued_by(alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(mallory_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.claiming_capabilities(proof_capabilities)
+      |> Builder.build!()
+      |> Ucan.sign(alice_keypair)
+
+    ucan =
+      Builder.default()
+      |> Builder.issued_by(mallory_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(alice_keypair))
+      |> Builder.with_lifetime(50)
+      |> Builder.witnessed_by(proof_ucan)
+      |> Builder.claiming_capabilities(delegated_capabilities)
+      |> Builder.build!()
+      |> Ucan.sign(mallory_keypair)
+
+    {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(proof_ucan))
+    {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(ucan))
+
+    # |> IO.inspect()
+    assert {:ok, prf_chain} =
+             ProofChains.from_ucan(ucan, store)
+
+    enable_capabilities(
+      prf_chain,
+      email_semantics,
+      Keymaterial.get_did(alice_keypair),
+      delegated_capabilities
+    )
+  end
+
+  # Checks proof chain returning true if all desired capabilities are enabled
+  @spec enable_capabilities(ProofChains.t(), Semantics.t(), String.t(), list(Capability)) ::
+          boolean()
+  defp enable_capabilities(proof_chain, email_semantics, originator, desired_capabilities) do
+    capability_infos = ProofChains.reduce_capabilities(proof_chain, email_semantics)
+    # for each desired_capability
+    #   for each capability_info
+    #     check if capability_info's originator same as given originator and also
+    #       capability_info.capability enables desired_capability (parse to get capability view)
+    #         if yes, then exit with has_capability true.
+    #         else, check for other capability infos with the desired capability
+    Enum.reduce_while(desired_capabilities, false, fn desired_capability, _has_capability ->
+      has_capability =
+        Enum.reduce_while(capability_infos, false, fn %CapabilityInfo{} = capability_info,
+                                                      _has_capability ->
+          if originator in capability_info.originators and
+               Capability.View.enables?(
+                 capability_info.capability,
+                 Semantics.parse_capability(email_semantics, desired_capability)
+               ) do
+            {:halt, true}
+          else
+            {:cont, false}
+          end
+        end)
+
+      if has_capability do
+        {:cont, true}
+      else
+        {:halt, false}
+      end
+    end)
+  end
+
+  @spec render_caveats(list(Capability)) :: list(String.t())
+  defp render_caveats(capabilities) do
+    Enum.map(capabilities, fn %Capability{caveat: caveat} ->
+      inspect(caveat)
+    end)
+  end
 end

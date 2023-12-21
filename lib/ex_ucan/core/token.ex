@@ -183,7 +183,7 @@ defmodule Ucan.Token do
          {:ok, header} <- Jason.decode(decoded_header, keys: :atoms),
          {:ok, decoded_payload} <- Base.url_decode64(payload, opts),
          {:ok, payload} <- Jason.decode(decoded_payload, keys: :atoms) do
-      {:ok, {struct(UcanHeader, header), struct(UcanPayload, payload)}}
+      {:ok, {struct(UcanHeader, header), to_ucanpayload(payload)}}
     end
   end
 
@@ -214,4 +214,22 @@ defmodule Ucan.Token do
 
   defp add_nonce(true), do: Utils.generate_nonce()
   defp add_nonce(false), do: nil
+
+  @spec to_ucanpayload(map()) :: UcanPayload.t()
+  defp to_ucanpayload(payload) do
+    %UcanPayload{
+      ucv: payload.ucv,
+      iss: payload.iss,
+      aud: payload.aud,
+      nbf: payload.nbf,
+      exp: payload.exp,
+      nnc: payload.nnc,
+      fct: payload.fct,
+      # Since we decode the entire payload using Jason.decode!(keys: atoms)
+      # even the capability maps will be converted, which we don't want.
+      # So we do a encoding decoding to convert caps to keys as strings
+      cap: Jason.encode!(payload.cap) |> Jason.decode!(),
+      prf: payload.prf
+    }
+  end
 end
