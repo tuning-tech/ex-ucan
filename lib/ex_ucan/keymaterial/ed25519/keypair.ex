@@ -39,6 +39,11 @@ defmodule Ucan.Keymaterial.Ed25519.Keypair do
   end
 
   defimpl Keymaterial do
+
+    def create(_type, _pub_key) do
+      :ok
+    end
+
     def get_jwt_algorithm_name(keypair) do
       keypair.jwt_alg
     end

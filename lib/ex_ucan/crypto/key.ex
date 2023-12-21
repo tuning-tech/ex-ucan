@@ -1,10 +1,16 @@
 defprotocol Ucan.Keymaterial do
   @moduledoc """
-  Keymaterial protocol used by Keypair generation modules like `Ucan.Keymaterial.Ed25519.Keypair`
+  This protocol must be implemented by a struct that encapsulates cryptographic
+  keypair data. The protocol represent the minimum required API capability for
+  producing a signed UCAN from a cryptographic keypair, and verifying such
+  signatures.
 
   This protocol requires four functions to be implemented, `get_jwt_algorithm_name/1`,
   `get_did/1`, `sign/2` and `verify/3`
   """
+
+  @spec create(t(), binary()) :: t()
+  def create(type, pub_key)
 
   @doc """
   Returns the Jwt algorithm used by the Keypair to create Ucan
