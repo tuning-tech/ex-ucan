@@ -103,7 +103,7 @@ defmodule AttenuationTest do
     assert info.capability == send_email_as_bob
   end
 
-  @tag :attenz
+  # @tag :attenz
   test "it finds the right proof chain for the originator", meta do
     email_semantics = %EmailSemantics{}
 
@@ -172,6 +172,71 @@ defmodule AttenuationTest do
            }
   end
 
+  @tag :attenz
+  test "consolidating capabilites while merging", meta do
+    email_semantics = %EmailSemantics{}
+
+    send_email_as_bob =
+      Semantics.parse(email_semantics, "mailto:bob@email.com", "email/send", nil)
+
+    send_email_as_alice =
+      Semantics.parse(email_semantics, "mailto:bob@email.com", "email/all", nil)
+
+    leaf_ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.mallory_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.claiming_capability(send_email_as_alice)
+      |> Builder.build!()
+      |> Ucan.sign(meta.alice_keypair)
+
+    leaf_ucan_bob =
+      Builder.default()
+      |> Builder.issued_by(meta.bob_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.mallory_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.claiming_capability(send_email_as_bob)
+      |> Builder.build!()
+      |> Ucan.sign(meta.bob_keypair)
+
+    ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.mallory_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.alice_keypair))
+      |> Builder.with_lifetime(50)
+      |> Builder.witnessed_by(leaf_ucan)
+      |> Builder.witnessed_by(leaf_ucan_bob)
+      |> Builder.claiming_capability(send_email_as_alice)
+      |> Builder.claiming_capability(send_email_as_bob)
+      |> Builder.build!()
+      |> Ucan.sign(meta.mallory_keypair)
+
+    {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
+    {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_bob))
+
+    assert {:ok, prf_chain} =
+             ProofChains.from_token_string(Ucan.encode(ucan), store)
+
+    assert [_ | _] =
+             capability_infos =
+             ProofChains.reduce_capabilities(prf_chain, email_semantics)
+
+    assert length(capability_infos) == 1
+
+    [send_email_as_alice_info] = capability_infos
+
+    assert send_email_as_alice_info == %CapabilityInfo{
+             originators: [
+               Keymaterial.get_did(meta.alice_keypair),
+               Keymaterial.get_did(meta.bob_keypair)
+             ],
+             capability: send_email_as_alice,
+             not_before: Ucan.not_before(ucan),
+             expires_at: Ucan.expires_at(ucan)
+           }
+  end
+
   @tag :attenu
   test "it reports all chain options", meta do
     email_semantics = %EmailSemantics{}
@@ -231,6 +296,57 @@ defmodule AttenuationTest do
              not_before: Ucan.not_before(ucan),
              expires_at: Ucan.expires_at(ucan)
            }
+  end
+
+  @tag :redelegated
+  test "it works with redelegated proofs", meta do
+    email_semantics = %EmailSemantics{}
+
+    send_email_as_alice =
+      Semantics.parse(email_semantics, "mailto:alice@email.com", "email/send", nil)
+
+    send_email_caps = Capability.new(send_email_as_alice)
+
+    proof_cap = Capability.new("prf:0", "ucan/DELEGATE", Jason.encode!(%{}))
+
+    leaf_ucan =
+      Builder.default()
+      |> Builder.issued_by(meta.alice_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.bob_keypair))
+      |> Builder.with_lifetime(60)
+      |> Builder.claiming_capability(send_email_caps)
+      |> Builder.build!()
+      |> Ucan.sign(meta.alice_keypair)
+
+    delegated_token =
+      Builder.default()
+      |> Builder.issued_by(meta.bob_keypair)
+      |> Builder.for_audience(Keymaterial.get_did(meta.mallory_keypair))
+      |> Builder.with_lifetime(50)
+      |> Builder.claiming_capability(send_email_caps)
+      |> Builder.claiming_capability(proof_cap)
+      |> Builder.witnessed_by(leaf_ucan)
+      |> Builder.build!()
+      |> Ucan.sign(meta.bob_keypair)
+
+    {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
+
+    # |> IO.inspect()
+    assert {:ok, prf_chain} =
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+
+    # |> IO.inspect()
+    assert [_ | _] =
+             capability_infos =
+             ProofChains.reduce_capabilities(prf_chain, email_semantics)
+
+    assert length(capability_infos) == 1
+    # %CapabilityInfo{} = info = List.first(capability_infos)
+    # assert to_string(info.capability.resource) == "mailto:alice@email.com"
+    # assert to_string(info.capability.ability) == "email/send"
+
+    # # Originator should be the issuer of leaf ucan
+    # assert [Keymaterial.get_did(meta.alice_keypair)] == info.originators
   end
 
   @tag :val_caveat
@@ -333,15 +449,7 @@ defmodule AttenuationTest do
       has_capability =
         Enum.reduce_while(capability_infos, false, fn %CapabilityInfo{} = capability_info,
                                                       _has_capability ->
-          if originator in capability_info.originators and
-               Capability.View.enables?(
-                 capability_info.capability,
-                 Semantics.parse_capability(email_semantics, desired_capability)
-               ) do
-            {:halt, true}
-          else
-            {:cont, false}
-          end
+          enable?(capability_info, originator, email_semantics, desired_capability)
         end)
 
       if has_capability do
@@ -357,5 +465,17 @@ defmodule AttenuationTest do
     Enum.map(capabilities, fn %Capability{caveat: caveat} ->
       inspect(caveat)
     end)
+  end
+
+  defp enable?(capability_info, originator, email_semantics, desired_capability) do
+    if originator in capability_info.originators and
+         Capability.View.enables?(
+           capability_info.capability,
+           Semantics.parse_capability(email_semantics, desired_capability)
+         ) do
+      {:halt, true}
+    else
+      {:cont, false}
+    end
   end
 end

@@ -13,8 +13,6 @@ defmodule Ucan.ProofChains do
   alias Ucan.Token
   alias Ucan
 
-  require IEx
-
   @type t :: %__MODULE__{
           ucan: Ucan.t(),
           proofs: list(__MODULE__.t()),
@@ -96,18 +94,14 @@ defmodule Ucan.ProofChains do
         # try to find the originators from the ancestral cap_infos..
         self_capability_stream
         |> Enum.map(fn %Capability.View{} = capability_view ->
-          case find_ancestral_originators(ancestral_capability_infos, capability_view) do
-            [] -> [Ucan.issuer(chain.ucan)]
-            originators -> originators
-          end
-          |> then(
-            &%CapabilityInfo{
-              originators: &1,
-              capability: capability_view,
-              not_before: Ucan.not_before(chain.ucan),
-              expires_at: Ucan.expires_at(chain.ucan)
-            }
-          )
+          %CapabilityInfo{
+            originators:
+              find_ancestral_originators(ancestral_capability_infos, capability_view) ||
+                [Ucan.issuer(chain.ucan)],
+            capability: capability_view,
+            not_before: Ucan.not_before(chain.ucan),
+            expires_at: Ucan.expires_at(chain.ucan)
+          }
         end)
       end
 
@@ -173,12 +167,20 @@ defmodule Ucan.ProofChains do
               }
             }
           }
+        }
+        when index < length(proof_chains) ->
+          {:cont, :ordsets.add_element(index, redelegations)}
+
+        %Capability.View{
+          resource: %Resource{
+            type: %ResourceType{
+              kind: %ResourceUri{
+                type: %Scoped{scope: %ProofSelection{type: %Index{value: index}}}
+              }
+            }
+          }
         } ->
-          if index < length(proof_chains) do
-            {:cont, :ordsets.add_element(index, redelegations)}
-          else
-            {:halt, {:error, "Unable to redelegate proof; no proof at zero based index #{index}"}}
-          end
+          {:halt, {:error, "Unable to redelegate proof; no proof at zero based index #{index}"}}
 
         %Capability.View{
           resource: %Resource{
@@ -187,9 +189,7 @@ defmodule Ucan.ProofChains do
             }
           }
         } ->
-          Enum.reduce(0..length(proof_chains), redelegations, fn index, redelegations ->
-            {:cont, :ordsets.add_element(index, redelegations)}
-          end)
+          {:cont, merge_redelegations(proof_chains, redelegations)}
 
         _ ->
           {:cont, redelegations}
@@ -227,7 +227,8 @@ defmodule Ucan.ProofChains do
     end)
   end
 
-  @spec find_ancestral_originators(list(CapabilityInfo.t()), Capability.View) :: list(String.t())
+  @spec find_ancestral_originators(list(CapabilityInfo.t()), Capability.View) ::
+          list(String.t()) | nil
   defp find_ancestral_originators(
          ancestral_capability_infos,
          %Capability.View{} = self_capability_view
@@ -241,6 +242,10 @@ defmodule Ucan.ProofChains do
           originators
         end
     end)
+    |> case do
+      [] -> nil
+      originators -> originators
+    end
   end
 
   @spec merge_capabilities(list(CapabilityInfo.t())) :: list(CapabilityInfo.t())
@@ -296,7 +301,8 @@ defmodule Ucan.ProofChains do
 
           %{
             remaining_cap_info
-            | originators: remaining_cap_info.originators ++ last_cap_info.originators
+            | originators:
+                (remaining_cap_info.originators ++ last_cap_info.originators) |> Enum.uniq()
           }
           # This kind of makes a new remaining_cap_info, by replacing the consolidated cap_info element only.
           |> then(&List.replace_at(result_cap_infos, index + 1, &1))
@@ -310,5 +316,11 @@ defmodule Ucan.ProofChains do
       end
     )
     |> then(fn {_, result_cap_infos, consolidated?} -> {result_cap_infos, consolidated?} end)
+  end
+
+  defp merge_redelegations(proof_chains, redelegations) do
+    Enum.reduce(0..length(proof_chains), redelegations, fn index, redelegations ->
+      :ordsets.add_element(index, redelegations)
+    end)
   end
 end
