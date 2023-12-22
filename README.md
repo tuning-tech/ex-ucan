@@ -8,8 +8,6 @@
 
 > Ucan version - v0.10.0
 
-**⚠️ WARNING ⚠️: This library is experimental and will likely have many breaking changes in the future!.**
-
 ## Table of Contents
 
 1. [About](#about)
@@ -39,7 +37,7 @@ Peer-to-peer
 
 **OAuth is designed for a centralized world, UCAN is the distributed user-controlled version.**
 
-## Structure
+## Structure (Ucan version 0.10.0)
 
 ### Header
 
@@ -82,13 +80,13 @@ end
 ```
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm).
+and can be also found on [HexDocs](https://hexdocs.pm).
 
 ## Usage
 
 ### Generating UCAN
 
-- Create a Keypair
+- Create a keymaterial
 
 - Use Ucan builder to build the payload
 
@@ -102,11 +100,11 @@ iex> alias Ucan.Builder
 # receiver DID
 iex> audience_did = "did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD"
 
-# Step 1: Create keypair
-# default keypair generation uses EdDSA algorithm
-iex> keypair = Ucan.create_default_keypair()
+# Step 1: Create keymaterial
+# default keymaterial generation uses EdDSA algorithm
+iex> keymaterial = Ucan.create_default_keymaterial()
 
-%Ucan.Keymaterial.Ed25519.Keypair{
+%Ucan.Keymaterial.Ed25519{
   jwt_alg: "EdDSA",
   public_key: <<253, 108, 63, 29, 71, 28, 139, 34, 170, 97, 117, 25, 179,
     124, 224, 206, 131, 150, 60, 212, 216, 168, 24, 85, 139, 119, 232, 14,
@@ -118,7 +116,7 @@ iex> keypair = Ucan.create_default_keypair()
 # Step 2: Use Ucan builder to build the payload
 iex> ucan_payload =
          Builder.default()
-         |> Builder.issued_by(keypair)
+         |> Builder.issued_by(keymaterial)
          |> Builder.for_audience(audience_did)
          |> Builder.with_lifetime(86_400)
          |> Builder.build!()
@@ -131,13 +129,13 @@ iex> ucan_payload =
   exp: 1698705462,
   nnc: nil,
   fct: %{},
-  cap: [],
+  cap: %{},
   prf: []
 }
 #######################################################################
 
-# Step 3: Sign the payload with the keypair (generated in step 1)
-iex> ucan = Ucan.sign(ucan_payload, keypair)
+# Step 3: Sign the payload with the keymaterial (generated in step 1)
+iex> ucan = Ucan.sign(ucan_payload, keymaterial)
 
 %Ucan{
   header: %Ucan.UcanHeader{
@@ -152,7 +150,7 @@ iex> ucan = Ucan.sign(ucan_payload, keypair)
     exp: 1698705462,
     nnc: nil,
     fct: %{},
-    cap: [],
+    cap: %{},
     prf: []
   },
   signed_data: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTg3MDU0NjIsInVjdiI6IjAuMTAuMCIsImlzcyI6ImRpZDprZXk6ejZNa211VHIzZmd0QmVUVm1EdFpaR211SE5yTHdFQTZiOUtYNFNodzFueUxpb0V5IiwiYXVkIjoiZGlkOmtleTp6Nk1rd0RLM000UHhVMUZxY1N0NHF1WGdocXVIMU1vV1hHelRyTmtOV1RTeTJOTEQiLCJuYmYiOm51bGwsIm5uYyI6bnVsbCwiZmN0Ijp7fSwiY2FwIjpbXSwicHJmIjpbXX0",
@@ -167,10 +165,26 @@ iex> Ucan.encode(ucan)
 
 ### Validating UCAN
 
-UCANs can be validated using
+UCANs can be validated with the help of `DidParser`. `DidParser` makes it easy to
+bring your own key support by implementing `Keymaterial` protocol on the algorithm.
 
-```
-Ucan.validate_token(token)
+```elixir
+## create a default Didparser which has a ed25519 keymaterial implementation in it
+
+iex>did_parser = Ucan.create_default_did_parser()
+%Ucan.DidParser{
+  key_constructors: %{
+    <<237, 1>> => #Ucan.Keymaterial.Ed25519<
+      jwt_alg: nil,
+      public_key: nil,
+      magic_bytes: <<237, 1>>,
+      ...
+    >
+  }
+}
+
+iex> Ucan.validate_token(token, did_parser)
+:ok
 ```
 
 ### Adding Capabilities
@@ -216,25 +230,26 @@ iex> ucan_payload =
 Given a UCAN, we can create a ProofChain which parses the token and the capabilities they grant via
 their issuer and/or witnessing proofs.
 
+Most capabilities are closely tied to a specific application domain. See the [capability fixtures](https://github.com/tuning-tech/ex-ucan/tree/main/test/fixtures/capabilities) to know more about defining your own domain-specific semantics.
+
 
 ```elixir
 
+# capability semanitcs for emails
 email_semantics = %EmailSemantics{}
 
 {:ok, prf_chain} = Ucan.ProofChains.from_token_string(Ucan.encode(delegated_token), store)
 
 capability_infos = Ucan.ProofChains.reduce_capabilities(prf_chain, email_semantics)
-
 ```
+
+More here [attenuation_test.exs](https://github.com/tuning-tech/ex-ucan/blob/main/test/attenuation_test.exs)
 
 ## Roadmap
 
-The library is onfeature parity with ucan [rust](https://github.com/ucan-wg/rs-ucan/tree/main) library. The spec itself is nearing a 1.0.0, and is under-review.
-But good thing is we have now laid the basic foundations. The next immediate additions would be,
+The library is on feature parity with [rs-ucan](https://github.com/ucan-wg/rs-ucan/tree/main) library. The UCAN spec itself is nearing a 1.0.0, and is under-review.
+So soon this ex-ucan will be upgraded to 1.0.0
 
-- [X] Proof encodings as CID (Content Addressable Data)
-- [X] Capability Semantics
-- [X] `delegating_from` in builder 
 
 ## Acknowledgement
 
