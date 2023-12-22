@@ -9,30 +9,39 @@ defprotocol Ucan.Keymaterial do
   `get_did/1`, `sign/2` and `verify/3`
   """
 
-  @spec create(t(), binary()) :: t()
-  def create(type, pub_key)
-
   @doc """
   Returns the Jwt algorithm used by the Keypair to create Ucan
   """
-  @spec get_jwt_algorithm_name(any()) :: String.t()
-  def get_jwt_algorithm_name(type)
+  @spec get_jwt_algorithm_name(t()) :: String.t()
+  def get_jwt_algorithm_name(keymaterial)
 
   @doc """
   Retursn the did (Decentralized Identifiers) generated using the keypair
   """
-  @spec get_did(any()) :: String.t()
-  def get_did(type)
+  @spec get_did(t()) :: String.t()
+  def get_did(keymaterial)
 
   @doc """
   Creates signature on the given payload with the keypair
   """
-  @spec sign(any(), binary()) :: binary()
-  def sign(type, payload)
+  @spec sign(t(), binary()) :: binary()
+  def sign(keymaterial, payload)
 
   @doc """
-  Verifies the signature with the keypair
+  Verifies the signature with the keymaterial and pub_key
   """
-  @spec verify(any(), binary(), binary()) :: boolean()
-  def verify(type, payload, signature)
+  @spec verify(t(), binary(), binary(), binary()) :: boolean()
+  def verify(keymaterial, pub_key, payload, signature)
+
+  @doc """
+  Returns the magic_bytes used for the algorithm
+  """
+  @spec get_magic_bytes(t()) :: binary()
+  def get_magic_bytes(keymaterial)
+
+  @doc """
+  Returns the public key from the keypair
+  """
+  @spec get_pub_key(t()) :: binary()
+  def get_pub_key(keymaterial)
 end

@@ -1,5 +1,6 @@
 defmodule ChainTest do
   @moduledoc false
+  alias Ucan.DidParser
   alias Ucan.ProofChains
   alias Ucan.Keymaterial
   alias Ucan.Builder
@@ -7,11 +8,21 @@ defmodule ChainTest do
   use ExUnit.Case
 
   setup do
-    alice_keypair = Ucan.create_default_keypair()
-    bob_keypair = Ucan.create_default_keypair()
-    mallory_keypair = Ucan.create_default_keypair()
+    alice_keypair = Ucan.create_default_keymaterial()
+    bob_keypair = Ucan.create_default_keymaterial()
+    mallory_keypair = Ucan.create_default_keymaterial()
 
-    %{alice_keypair: alice_keypair, bob_keypair: bob_keypair, mallory_keypair: mallory_keypair}
+    did_parser =
+      DidParser.new([
+        {Keymaterial.get_magic_bytes(alice_keypair), alice_keypair}
+      ])
+
+    %{
+      alice_keypair: alice_keypair,
+      bob_keypair: bob_keypair,
+      mallory_keypair: mallory_keypair,
+      did_parser: did_parser
+    }
   end
 
   @tag :chain
@@ -36,7 +47,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:ok, %ProofChains{} = proof_chain} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store, meta.did_parser)
 
     assert length(proof_chain.proofs) == 1
   end
@@ -74,7 +85,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(delegated_token))
 
     assert {:error, "Invalid UCAN link: lifetime exceeds attenuation"} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token_2), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token_2), store, meta.did_parser)
   end
 
   @tag :chain
@@ -110,7 +121,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(delegated_token))
 
     assert {:error, "Invalid UCAN link:" <> _} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token_2), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token_2), store, meta.did_parser)
   end
 
   @tag :chain
@@ -135,7 +146,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:ok, %ProofChains{} = proof_chain} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store, meta.did_parser)
 
     assert length(proof_chain.proofs) == 1
 
@@ -166,7 +177,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:error, "Invalid UCAN link:" <> _} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store, meta.did_parser)
   end
 
   @tag :chain
@@ -192,7 +203,7 @@ defmodule ChainTest do
     {:ok, cid, store} = UcanStore.write(store, Ucan.encode(delegated_token))
 
     assert {:ok, _} =
-             ProofChains.from_cid(cid, store)
+             ProofChains.from_cid(cid, store, meta.did_parser)
   end
 
   @tag :chain_rs
@@ -227,7 +238,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_2))
 
     assert {:ok, _} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store, meta.did_parser)
   end
 
   @tag :redel
@@ -255,7 +266,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:error, "Unable to redelegate proof" <> _} =
-             ProofChains.from_token_string(Ucan.encode(delegated_ucan), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_ucan), store, meta.did_parser)
   end
 
   @tag :redel_2
@@ -283,7 +294,7 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:ok, %ProofChains{redelegations: [0]}} =
-             ProofChains.from_token_string(Ucan.encode(delegated_ucan), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_ucan), store, meta.did_parser)
   end
 
   @tag :redel_3
@@ -311,6 +322,6 @@ defmodule ChainTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:ok, %ProofChains{redelegations: []}} =
-             ProofChains.from_token_string(Ucan.encode(delegated_ucan), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_ucan), store, meta.did_parser)
   end
 end
