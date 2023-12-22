@@ -1,11 +1,20 @@
 defmodule Ucan.Capability do
   @moduledoc """
-  Capabilities are a list of `resources`, and the `abilities` that we
+  Capability consists of `resource`, and the `abilities` that we
   can make on the `resource` with some optional `caveats`.
   """
-  alias Ucan.Capability.View
   alias Ucan.Capability
+  alias Ucan.Capability.View
 
+  @typedoc """
+  Capability structure
+
+  resource - string
+
+  ability - string
+
+  caveat - Any `Jason.decode()` value
+  """
   @type t :: %__MODULE__{
           resource: String.t(),
           ability: String.t(),
@@ -17,7 +26,7 @@ defmodule Ucan.Capability do
   defstruct [:resource, :ability, :caveat]
 
   @doc """
-  Creates a new capability with given resource, ability and caveat
+  Creates a new capability with given resource, ability and caveat or from a `Capability.View`
 
   See `/test/capability_test.exs`
   """

@@ -2,19 +2,23 @@ defmodule Ucan do
   @moduledoc """
   Documentation for `Ucan`.
   """
-  alias Ucan.Keymaterial
   alias Ucan.DidParser
+  alias Ucan.Keymaterial
   alias Ucan.Keymaterial.Ed25519
-  alias Ucan.Capabilities
   alias Ucan.Token
 
   alias Ucan.UcanHeader
   alias Ucan.UcanPayload
 
   @typedoc """
+  Ucan structure
+
   header - Token Header
+
   payload - Token payload
+
   signed_data - Data that would be eventually signed
+
   signature - Base64Url encoded signature
   """
   @type t :: %__MODULE__{
@@ -27,8 +31,8 @@ defmodule Ucan do
   defstruct [:header, :payload, :signed_data, :signature]
 
   @doc """
-  Creates a default DidParser which has a default support for
-  ed25519 `Keymaterial.t()` implementation
+  Creates a default `Ucan.DidParser` which has a default support for
+  ed25519 algorithm's `Ucan.Keymaterial` implementation.
 
   Keymaterial generated with different algorithms like RSA will be coming soon..
   """
@@ -46,72 +50,94 @@ defmodule Ucan do
   end
 
   @doc """
-   Signs the payload with Keymaterial and returns a UCAN struct
+  Signs the payload with Keymaterial and returns a UCAN struct
 
-  - payload - Ucan payload type
-  - Keymaterial - A Keymaterial implemented struct
+  - payload - `Ucan.UcanPayload`
+  - Keymaterial - A `Ucan.Keymaterial` implemented struct
   """
   @spec sign(payload :: UcanPayload.t(), Keymaterial.t()) :: __MODULE__.t()
-  def sign(payload, keymaterial) do
+  def sign(%UcanPayload{} = payload, keymaterial) do
     Token.sign_with_payload(payload, keymaterial)
   end
 
   @doc """
-  Encode the Ucan.t() struct to JWT like token
+  Encode the `Ucan.t()` struct to JWT token string
   """
   @spec encode(__MODULE__.t()) :: String.t()
-  def encode(ucan) do
+  def encode(%Ucan{} = ucan) do
     Token.encode(ucan)
   end
 
   @doc """
   Validate the UCAN token's signature and timestamps
 
-  - token - Ucan token | encoded jwt token
+  - token - `Ucan` token or encoded jwt token string
+  - did_parser - `Ucan.DidParser`
   """
   @spec validate(String.t() | __MODULE__.t(), DidParser.t()) :: :ok | {:error, String.t()}
-  def validate(token, did_parser) do
+  def validate(token, did_parser) when is_binary(token) or is_struct(token) do
     Token.validate(token, did_parser)
   end
 
-  # TODO: docs
+  @doc """
+  Converts a ucan jwt token string to `Ucan`.
+
+  - token - jwt ucan token string
+  """
   @spec from_jwt_token(String.t()) :: {:ok, __MODULE__.t()} | {:error, String.t() | map()}
-  def from_jwt_token(token) do
+  def from_jwt_token(token) when is_binary(token) do
     Token.decode(token)
   end
 
-  # TODO: docs
+  @doc """
+  Returns list of proofs (CID encoded) in a given UCAN
+  """
   @spec proofs(__MODULE__.t()) :: list(String.t())
-  def proofs(ucan) do
+  def proofs(%Ucan{} = ucan) do
     ucan.payload.prf
   end
 
-  # TODO: docs
+  @doc """
+  Returns the audience DID of the given ucan.
+  """
   @spec audience(__MODULE__.t()) :: String.t()
-  def audience(ucan) do
+  def audience(%Ucan{} = ucan) do
     ucan.payload.aud
   end
 
-  # TODO: docs
+  @doc """
+  Returns the issuer DID of given ucan
+  """
   @spec issuer(__MODULE__.t()) :: String.t()
-  def issuer(ucan) do
+  def issuer(%Ucan{} = ucan) do
     ucan.payload.iss
   end
 
+  @doc """
+  Returns the `not_before` unix time of given UCAN
+  """
   @spec not_before(__MODULE__.t()) :: integer()
   def not_before(%Ucan{payload: %UcanPayload{nbf: nbf}}), do: nbf
 
+  @doc """
+  Returns the `expires_at` unix time of given UCAN
+  """
   @spec expires_at(__MODULE__.t()) :: integer()
   def expires_at(%Ucan{payload: %UcanPayload{exp: exp}}), do: exp
 
-  @spec capabilities(__MODULE__.t()) :: Capabilities.t()
-  def capabilities(ucan) do
+  @doc """
+  Return capabilities of UCAN in map structure using (`Ucan.Capabilities.sequence_to_map()`)
+  """
+  @spec capabilities(__MODULE__.t()) :: map()
+  def capabilities(%Ucan{} = ucan) do
     ucan.payload.cap
   end
 
-  # TODO: docs
+  @doc """
+  Checks if first ucan survives longer than the second
+  """
   @spec lifetime_encompasses?(__MODULE__.t(), __MODULE__.t()) :: boolean()
-  def lifetime_encompasses?(ucan_a, ucan_b) do
+  def lifetime_encompasses?(%Ucan{} = ucan_a, %Ucan{} = ucan_b) do
     lifetime_begins_before?(ucan_a, ucan_b) and lifetime_ends_after?(ucan_a, ucan_b)
   end
 
@@ -120,7 +146,8 @@ defmodule Ucan do
   # other has an unbounded start time and this function will return
   # false.
 
-  defp lifetime_begins_before?(ucan_a, ucan_b) do
+  @spec lifetime_begins_before?(__MODULE__.t(), __MODULE__.t()) :: boolean()
+  defp lifetime_begins_before?(%Ucan{} = ucan_a, %Ucan{} = ucan_b) do
     case {ucan_a.payload.nbf, ucan_b.payload.nbf} do
       {ucan_a_nbf, nil} when not is_nil(ucan_a_nbf) -> false
       {nil, _ucan_b_nbf} -> true
@@ -128,7 +155,7 @@ defmodule Ucan do
     end
   end
 
-  defp lifetime_ends_after?(ucan_a, ucan_b) do
+  defp lifetime_ends_after?(%Ucan{} = ucan_a, %Ucan{} = ucan_b) do
     case {ucan_a.payload.exp, ucan_b.payload.exp} do
       {ucan_a_nbf, nil} when not is_nil(ucan_a_nbf) -> false
       {nil, _} -> true

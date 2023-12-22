@@ -1,25 +1,23 @@
 defmodule Ucan.Builder do
   @moduledoc """
-  Builder functions for UCAN tokens
+  Concise builder functions for UCAN tokens
   """
   require Logger
-  alias Ucan.Capability
-  alias Ucan.Capability.View
-  alias Ucan.Capability.Semantics
-  alias Ucan.ProofDelegationSemantics
-  alias Ucan.UcanPayload
   alias Ucan
+  alias Ucan.Capability
+  alias Ucan.Capability.Semantics
+  alias Ucan.Capability.View
+  alias Ucan.Keymaterial
+  alias Ucan.ProofDelegationSemantics
   alias Ucan.Token
-  alias Ucan.Keymaterial.Ed25519.Keypair
+  alias Ucan.UcanPayload
 
   # @type hash_type :: :sha1 | :sha2_256 | :sha2_512 | :sha3 | :blake2b | :blake2s | :blake3
 
   @type hash_type :: :sha2_256 | :blake3
 
-  # TODO: Change the typespecs from KeyPair to KeyMaterial
-
   @type t :: %__MODULE__{
-          issuer: Keypair,
+          issuer: Keymaterial.t(),
           audience: String.t(),
           capabilities: list(Capability),
           lifetime: number(),
@@ -42,12 +40,12 @@ defmodule Ucan.Builder do
   ]
 
   @doc """
-    Create an empty builder.
+    Creates an empty builder.
     Before finalising the builder, we need to at least call:
     - `issued_by`
     - `to_audience` and one of
     - `with_lifetime` or `with_expiration`.
-    To finalise the builder, call its `build` or `build_parts` method.
+    To finalise the builder, call its `build` method.
   """
   @spec default :: __MODULE__.t()
   def default do
@@ -67,9 +65,9 @@ defmodule Ucan.Builder do
   @doc """
   The UCAN must be signed with the private key of the issuer to be valid.
   """
-  @spec issued_by(__MODULE__.t(), Keypair) :: __MODULE__.t()
-  def issued_by(%__MODULE__{} = builder, keypair) do
-    %{builder | issuer: keypair}
+  @spec issued_by(__MODULE__.t(), Keymaterial.t()) :: __MODULE__.t()
+  def issued_by(%__MODULE__{} = builder, keymaterial) do
+    %{builder | issuer: keymaterial}
   end
 
   @doc """
@@ -80,7 +78,7 @@ defmodule Ucan.Builder do
   continue the UCAN chain as an issuer.
   """
   @spec for_audience(__MODULE__.t(), String.t()) :: __MODULE__.t()
-  def for_audience(builder, audience) do
+  def for_audience(%__MODULE__{} = builder, audience) when is_binary(audience) do
     %{builder | audience: audience}
   end
 
@@ -90,7 +88,7 @@ defmodule Ucan.Builder do
   is set.
   """
   @spec with_lifetime(__MODULE__.t(), integer()) :: __MODULE__.t()
-  def with_lifetime(builder, seconds) do
+  def with_lifetime(%__MODULE__{} = builder, seconds) when is_integer(seconds) do
     %{builder | lifetime: seconds}
   end
 
@@ -99,7 +97,7 @@ defmodule Ucan.Builder do
   Setting this value overrides a configured lifetime value.
   """
   @spec with_expiration(__MODULE__.t(), integer()) :: __MODULE__.t()
-  def with_expiration(builder, timestamp) do
+  def with_expiration(%__MODULE__{} = builder, timestamp) when is_integer(timestamp) do
     %{builder | expiration: timestamp}
   end
 
@@ -107,7 +105,7 @@ defmodule Ucan.Builder do
   Set the POSIX timestamp (in seconds) of when the UCAN becomes active.
   """
   @spec not_before(__MODULE__.t(), integer()) :: __MODULE__.t()
-  def not_before(builder, timestamp) do
+  def not_before(%__MODULE__{} = builder, timestamp) do
     %{builder | not_before: timestamp}
   end
 
@@ -115,7 +113,7 @@ defmodule Ucan.Builder do
   Add a fact or proof of knowledge to this UCAN.
   """
   @spec with_fact(__MODULE__.t(), String.t(), any()) :: __MODULE__.t()
-  def with_fact(builder, key, fact) do
+  def with_fact(%__MODULE__{} = builder, key, fact) when is_binary(key) do
     %{builder | facts: Map.put(builder.facts, key, fact)}
   end
 
@@ -123,7 +121,7 @@ defmodule Ucan.Builder do
   Will ensure that the built UCAN includes a number used once.
   """
   @spec with_nonce(__MODULE__.t()) :: __MODULE__.t()
-  def with_nonce(builder) do
+  def with_nonce(%__MODULE__{} = builder) do
     %{builder | add_nonce?: true}
   end
 
@@ -138,7 +136,7 @@ defmodule Ucan.Builder do
   @spec witnessed_by(__MODULE__.t(), Ucan.t(), hash_type()) :: __MODULE__.t()
   def witnessed_by(builder, authority_ucan, hash_type \\ :blake3)
 
-  def witnessed_by(builder, %Ucan{} = authority_ucan, hash_type) do
+  def witnessed_by(%__MODULE__{} = builder, %Ucan{} = authority_ucan, hash_type) do
     case Token.to_cid(authority_ucan, hash_type) do
       {:ok, cid} ->
         %{builder | proofs: [cid | builder.proofs]}
@@ -172,12 +170,12 @@ defmodule Ucan.Builder do
   @doc """
   Delegate all capabilities from a given proof to the audience of the UCAN
   you're building.
-  The proof is encoded into a Cid, hashed with given hash (blake3 by default)
+  The proof is encoded into a CID, hashed with given hash (blake3 by default)
   algorithm, unless one is provided.
   """
   @spec delegating_from(__MODULE__.t(), Ucan.t(), hash_type()) :: __MODULE__.t()
   def delegating_from(builder, authority_ucan, hash_type \\ :blake3) do
-    case Token.to_cid(authority_ucan, hash_type) do
+    case Token.to_cid(%Ucan{} = authority_ucan, hash_type) do
       {:ok, cid} ->
         builder = %{builder | proofs: [cid | builder.proofs]}
         proof_index = length(builder.proofs) - 1
@@ -205,6 +203,7 @@ defmodule Ucan.Builder do
   A runtime exception is raised if build payloads fails.
 
   A sample builder workflow to create ucan payload
+
   ```Elixir
   alias Ucan.Builder
 
@@ -218,7 +217,7 @@ defmodule Ucan.Builder do
   ```
   """
   @spec build!(__MODULE__.t()) :: UcanPayload.t()
-  def build!(builder) do
+  def build!(%__MODULE__{} = builder) do
     case Token.build_payload(builder) do
       {:ok, payload} -> payload
       {:error, err} -> raise err
@@ -231,7 +230,7 @@ defmodule Ucan.Builder do
   An error tuple with reason is returned if build payloads fails.
   """
   @spec build(__MODULE__.t()) :: {:ok, UcanPayload.t()} | {:error, String.t()}
-  def build(builder) do
+  def build(%__MODULE__{} = builder) do
     Token.build_payload(builder)
   end
 end

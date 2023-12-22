@@ -19,10 +19,26 @@ defmodule Keymaterial.CryptoTest do
     test "wrong did format" do
       %Ed25519{} = ed_keymaterial = Ed25519.create()
 
+      did_parser = DidParser.new(DidParser.get_default_constructors())
+
       wrong_did = "did:key:6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD"
 
       assert {:error, "Please use a base58-encoded DID formatted `did:key:z..."} =
                DidParser.did_to_publickey(wrong_did, Keymaterial.get_magic_bytes(ed_keymaterial))
+
+      assert {:error, _} = DidParser.parse(did_parser, wrong_did)
+    end
+
+    @tag :did_2
+    test "wrong magic bytes" do
+      did_parser = DidParser.new(DidParser.get_default_constructors())
+
+      wrong_did = "did:key:zwDK3M4PxU1FqcSt4quhquH1MoWXGzTrNkNWTSy2NLD"
+
+      # assert {:error, "Please use a base58-encoded DID formatted `did:key:z..."} =
+      #  DidParser.did_to_publickey(wrong_did, Keymaterial.get_magic_bytes(ed_keymaterial))
+
+      assert {:error, "Unrecognized magic bytes" <> _} = DidParser.parse(did_parser, wrong_did)
     end
 
     @tag :did

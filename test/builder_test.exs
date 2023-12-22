@@ -1,11 +1,11 @@
 defmodule BuilderTest do
-  alias Ucan.Token
-  alias Ucan.Builder
-  alias Ucan.Capabilities
-  alias Ucan.Capability
-  alias Ucan.UcanPayload
   alias Ucan
+  alias Ucan.Builder
+  alias Ucan.Capability
+  alias Ucan.Capabilities
   alias Ucan.Keymaterial
+  alias Ucan.Token
+  alias Ucan.UcanPayload
   use ExUnit.Case
 
   setup do
@@ -230,7 +230,6 @@ defmodule BuilderTest do
     assert payload.cap == expected_attenuations
   end
 
-  # TODO: What is None caveat in rust, how are they converting that to Capabilities
   @tag :build_rs
   test "it_builds_with_lifetime_in_seconds", meta do
     token =
@@ -299,5 +298,32 @@ defmodule BuilderTest do
       |> Ucan.sign(meta.keypair)
 
     assert %{"prf:0" => %{"ucan/DELEGATE" => [%{}]}} = Ucan.capabilities(delegated_token)
+  end
+
+  test "delegating_from-2", meta do
+    cap = Capability.new("example://bar", "ability/bar", Jason.encode!(%{"beep" => 1}))
+
+    authority_token =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.claiming_capability(cap)
+      |> Builder.build!()
+      |> Ucan.sign(meta.keypair)
+
+    _delegated_token =
+      Builder.default()
+      |> Builder.issued_by(meta.keypair)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.delegating_from(authority_token)
+      |> Builder.build!()
+      |> Ucan.sign(meta.keypair)
+  end
+
+  test "parse_encoded_ucan" do
+    assert {:error, _} =
+             Token.parse_encoded_ucan("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
   end
 end

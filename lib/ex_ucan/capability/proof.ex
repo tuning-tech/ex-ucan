@@ -1,5 +1,7 @@
 defmodule Ucan.ProofSelection do
+  @moduledoc false
   defmodule Index do
+    @moduledoc false
     @type t :: %__MODULE__{
             value: integer()
           }
@@ -53,6 +55,7 @@ defmodule Ucan.ProofSelection do
 end
 
 defmodule Ucan.ProofAction do
+  @moduledoc false
   @type t :: %__MODULE__{type: :delegate}
   defstruct type: :delegate
 
@@ -93,31 +96,13 @@ defmodule Ucan.ProofAction do
 end
 
 defmodule Ucan.ProofDelegationSemantics do
+  @moduledoc false
   alias Ucan.ProofAction
   alias Ucan.ProofSelection
-  alias Ucan.ProofSelection.Index
-  # implement Capability.Semantics protocol
+
   @type t :: %__MODULE__{
           scope: Ucan.ProofSelection.t(),
           ability: Ucan.ProofAction.t()
         }
   defstruct scope: %ProofSelection{}, ability: %ProofAction{}
-
-  # TODO: doc
-  @spec new(integer()) :: __MODULE__.t()
-  def new(prf_index \\ nil)
-
-  def new(prf_index) do
-    scope =
-      if is_nil(prf_index) do
-        %Ucan.ProofSelection{type: :all}
-      else
-        %Ucan.ProofSelection{type: %Index{value: prf_index}}
-      end
-
-    %__MODULE__{
-      scope: scope,
-      ability: %Ucan.ProofAction{}
-    }
-  end
 end

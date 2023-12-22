@@ -1,12 +1,12 @@
 defmodule AttenuationTest do
-  alias Ucan.DidParser
+  alias Ucan.Builder
   alias Ucan.CapabilityInfo
   alias Ucan.Capability
-  alias Ucan.ProofChains
   alias Ucan.Capability.Semantics
-  alias Ucan.Keymaterial
-  alias Ucan.Builder
+  alias Ucan.DidParser
   alias Ucan.EmailSemantics
+  alias Ucan.Keymaterial
+  alias Ucan.ProofChains
   use ExUnit.Case
 
   setup do

@@ -27,8 +27,8 @@ defmodule Ucan.Keymaterial.Ed25519 do
 
   This keypair can be later used for create UCAN tokens
   """
-  @spec create() :: t()
-  def create() do
+  @spec create :: t()
+  def create do
     {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
 
     %__MODULE__{

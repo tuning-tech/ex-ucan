@@ -29,9 +29,9 @@ defmodule Ucan.Capability.Caveats do
   def enables?(_, _), do: false
 
   @doc """
-  Converts a caveat in JSON string to map with validations
+  Parses a caveat JSON string or a map
   """
-  @spec from(String.t()) :: {:ok, map()} | {:error, String.t()}
+  @spec from(String.t() | map()) :: {:ok, map()} | {:error, String.t()}
   def from(value) when is_binary(value) do
     with {:ok, val} <- Jason.decode(value),
          true <- is_map(val) do

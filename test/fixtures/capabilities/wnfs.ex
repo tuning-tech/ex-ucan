@@ -9,7 +9,6 @@ defmodule Ucan.WnfsScope do
   """
   alias Ucan.Capability.Scope
 
-  # TODO: typedoc
   @type t :: %__MODULE__{
           origin: String.t(),
           path: String.t()

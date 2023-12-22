@@ -59,7 +59,8 @@ defmodule ExUcan.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:b58, "~> 1.0.2"},
       {:excid, git: "https://github.com/madclaws/cid.git"},
-      {:ex_ipfs_ipld, "~> 1.0"}
+      {:ex_ipfs_ipld, "~> 1.0"},
+      {:ex_doc, "~> 0.16", only: :dev, runtime: false}
     ]
   end
 

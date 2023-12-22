@@ -1,7 +1,7 @@
 defmodule Keymaterial.KeypairTest do
   alias Ucan.DidParser
-  alias Ucan.Keymaterial.Ed25519
   alias Ucan.Keymaterial
+  alias Ucan.Keymaterial.Ed25519
   use ExUnit.Case
 
   @tag :edd
@@ -27,6 +27,8 @@ defmodule Keymaterial.KeypairTest do
              DidParser.parse(did_parser, Keymaterial.get_did(ed_keymaterial))
 
     assert Keymaterial.verify(keymaterial, pub_key, "Hello world", signature)
+
+    assert "#Ucan.Keymaterial.Ed25519" <> _ = inspect(ed_keymaterial)
   end
 
   @tag :edd

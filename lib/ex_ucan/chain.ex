@@ -1,18 +1,24 @@
 defmodule Ucan.ProofChains do
-  alias Ucan.DidParser
+  @moduledoc """
+  Creates a recursive chain of a ucan and its proofs, while also validating
+  the parent ucan conditions
+  """
+  alias Ucan
+
   alias Ucan.Capability
   alias Ucan.CapabilityInfo
-  alias Ucan.ProofSelection
-  alias Ucan.ProofSelection.Index
-  alias Ucan.Capability.ResourceUri.Scoped
+
+  alias Ucan.Capabilities
+  alias Ucan.Capability.Resource
   alias Ucan.Capability.Resource.ResourceType
   alias Ucan.Capability.ResourceUri
-  alias Ucan.Capability.Resource
+  alias Ucan.Capability.ResourceUri.Scoped
   alias Ucan.Capability.Semantics
+  alias Ucan.DidParser
   alias Ucan.ProofDelegationSemantics
-  alias Ucan.Capabilities
+  alias Ucan.ProofSelection
+  alias Ucan.ProofSelection.Index
   alias Ucan.Token
-  alias Ucan
 
   @type t :: %__MODULE__{
           ucan: Ucan.t(),
@@ -21,10 +27,12 @@ defmodule Ucan.ProofChains do
         }
   defstruct [:ucan, :proofs, :redelegations]
 
-  # TODO: docs
+  @doc """
+  Create a proof chain from given `Ucan.t`
+  """
   @spec from_ucan(Ucan.t(), store :: UcanStore.t(), DidParser.t()) ::
           {:ok, __MODULE__.t()} | {:error, String.t()}
-  def from_ucan(ucan, store, did_parser) do
+  def from_ucan(%Ucan{} = ucan, store, did_parser) do
     _ = UcanStore.impl_for!(store)
 
     with :ok <- Token.validate(ucan, did_parser),
@@ -40,7 +48,9 @@ defmodule Ucan.ProofChains do
     end
   end
 
-  # TODO: docs
+  @doc """
+  Create a proof chain from given ucan jwt token
+  """
   @spec from_token_string(String.t(), UcanStore, DidParser.t()) ::
           {:ok, __MODULE__.t()} | {:error, String.t()}
   def from_token_string(ucan_token, store, did_parser) do
@@ -49,7 +59,9 @@ defmodule Ucan.ProofChains do
     end
   end
 
-  # TODO: docs
+  @doc """
+   Create a proof chain from given CID of ucan jwt token
+  """
   @spec from_cid(String.t(), UcanStore.t(), DidParser.t()) ::
           {:ok, __MODULE__.t()} | {:error, String.t()}
   def from_cid(cid, store, did_parser) do
@@ -310,7 +322,8 @@ defmodule Ucan.ProofChains do
           # This kind of makes a new remaining_cap_info, by replacing the consolidated cap_info element only.
           |> then(&List.replace_at(result_cap_infos, index + 1, &1))
           |> then(&{index + 1, &1, true})
-          # Once we consolidated the last_cap_info, we can exit the loop, and send the new consolidate `remaining_cap_info` to the caller
+          # Once we consolidated the last_cap_info, we can exit the loop, and send
+          # the new consolidate `remaining_cap_info` to the caller
           |> then(&{:halt, &1})
         else
           {index, result_cap_infos, consolidated?} = acc

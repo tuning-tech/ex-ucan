@@ -2,13 +2,13 @@ defmodule Ucan.Token do
   @moduledoc """
   Core functions for the creation and management of UCAN tokens
   """
-  alias Ucan.DidParser
   alias Ucan.Builder
   alias Ucan.Capabilities
+  alias Ucan.DidParser
+  alias Ucan.Keymaterial
   alias Ucan.UcanHeader
   alias Ucan.UcanPayload
   alias Ucan.Utils
-  alias Ucan.Keymaterial
 
   @token_type "JWT"
   @version %{major: 0, minor: 10, patch: 0}
@@ -90,7 +90,6 @@ defmodule Ucan.Token do
     else
       {true, :expired} -> {:error, "Ucan token is already expired"}
       {true, :early} -> {:error, "Ucan token is not yet active"}
-      err -> err
     end
   end
 
@@ -134,7 +133,6 @@ defmodule Ucan.Token do
   """
   @spec to_cid(Ucan.t() | String.t(), Builder.hash_type()) ::
           {:ok, String.t()} | {:error, Stirng.t()}
-  def to_cid(ucan, hash_type \\ :blake3)
 
   def to_cid(ucan, hash_type) do
     Cid.cid(ucan, hash_type)
@@ -196,7 +194,8 @@ defmodule Ucan.Token do
       {"", _, _} -> {:error, err_msg}
       {_, "", _} -> {:error, err_msg}
       {_, _, ""} -> {:error, err_msg}
-      ucan_parts -> {:ok, ucan_parts}
+      {_, _, _} = ucan_parts -> {:ok, ucan_parts}
+      _ -> {:error, err_msg}
     end
   end
 

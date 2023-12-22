@@ -4,7 +4,9 @@ defprotocol Ucan.Capability.Scope do
 end
 
 defmodule Ucan.Capability.ResourceUri do
+  @moduledoc false
   defmodule Scoped do
+    @moduledoc false
     @type t :: %__MODULE__{
             scope: Scope
           }
@@ -48,7 +50,9 @@ defmodule Ucan.Capability.ResourceUri do
 end
 
 defmodule Ucan.Capability.Resource do
+  @moduledoc false
   defmodule ResourceType do
+    @moduledoc false
     alias Ucan.Capability.ResourceUri
 
     @type t :: %__MODULE__{
@@ -58,6 +62,7 @@ defmodule Ucan.Capability.Resource do
   end
 
   defmodule My do
+    @moduledoc false
     alias Ucan.Capability.ResourceUri
 
     @type t :: %__MODULE__{
@@ -67,6 +72,7 @@ defmodule Ucan.Capability.Resource do
   end
 
   defmodule As do
+    @moduledoc false
     alias Ucan.Capability.ResourceUri
 
     @type t :: %__MODULE__{
@@ -124,10 +130,11 @@ defmodule Ucan.CapabilityInfo do
 end
 
 defmodule Ucan.Capability.View do
-  alias Ucan.Utility.PartialOrder
-  alias Ucan.Capability.Scope
+  @moduledoc false
   alias Ucan.Capability.Caveats
   alias Ucan.Capability.Resource
+  alias Ucan.Capability.Scope
+  alias Ucan.Utility.PartialOrder
 
   @type t :: %__MODULE__{
           resource: Resource.t(),

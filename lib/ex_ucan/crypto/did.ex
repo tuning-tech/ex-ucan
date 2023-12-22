@@ -2,8 +2,8 @@ defmodule Ucan.DidParser do
   @moduledoc """
   DID Utilities
   """
-  alias Ucan.Keymaterial.Ed25519
   alias Ucan.Keymaterial
+  alias Ucan.Keymaterial.Ed25519
 
   # z is the multibase prefix for base58btc byte encoding
   @base58_did_prefix "did:key:z"
@@ -32,7 +32,9 @@ defmodule Ucan.DidParser do
     )
   end
 
-  # TODO: docs
+  @doc """
+  Returns the public key and corresponding `Keymaterial` for given DID
+  """
   @spec parse(__MODULE__.t(), String.t()) ::
           {:ok, pub_key :: binary(), Ucan.Keymaterial.t()} | {:error, String.t()}
   def parse(%__MODULE__{} = parser, "did:key:z" <> did) do

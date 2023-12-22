@@ -1,8 +1,8 @@
 defmodule UcanTest do
-  alias Ucan.Keymaterial
-  alias Ucan.DidParser
-  alias Ucan.Keymaterial.Ed25519
   alias Ucan.Builder
+  alias Ucan.DidParser
+  alias Ucan.Keymaterial
+  alias Ucan.Keymaterial.Ed25519
   use ExUnit.Case
   doctest Ucan
   doctest Ucan.Utils
@@ -60,5 +60,23 @@ defmodule UcanTest do
       |> Ucan.encode()
 
     assert {:error, "Ucan token is not yet active"} = Ucan.validate(token, meta.did_parser)
+  end
+
+  test "default did parser" do
+    assert %DidParser{} = Ucan.create_default_did_parser()
+  end
+
+  @tag :Ucan
+  test "from_jwt_token", meta do
+    token =
+      Builder.default()
+      |> Builder.issued_by(meta.keymaterial)
+      |> Builder.for_audience("did:key:z6MkwDK3M4PxU1FqcSt4quXghquH1MoWXGzTrNkNWTSy2NLD")
+      |> Builder.with_expiration((DateTime.utc_now() |> DateTime.to_unix()) + 86_400)
+      |> Builder.build!()
+      |> Ucan.sign(meta.keymaterial)
+      |> Ucan.encode()
+
+    assert {:ok, _} = Ucan.from_jwt_token(token)
   end
 end

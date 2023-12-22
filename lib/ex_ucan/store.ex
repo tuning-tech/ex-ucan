@@ -1,7 +1,7 @@
 defprotocol UcanStore do
   @moduledoc """
   This protocol is to be implemented by storage backends suitable
-  for storing UCAN token, which later will be referenced by other UCANs as
+  for storing UCAN tokens, which later will be referenced by other UCANs as
   proofs
   """
 
@@ -20,7 +20,7 @@ end
 
 defmodule MemoryStoreJwt do
   @moduledoc """
-  In-memory implementation of `UcanStore`, where tokens are stored as encoded JWT
+  In-memory implementation of `UcanStore`, where tokens are stored as encoded JWT and indexed by their CIDs
   """
   @type t :: %__MODULE__{
           data: map()
@@ -31,16 +31,14 @@ end
 defimpl UcanStore, for: MemoryStoreJwt do
   alias Ucan.Token
 
-  # defstruct [:store]
-  # destructure()
-  def write(store, token) do
+  def write(store, token) when is_binary(token) do
     with {:ok, ucan} <- Token.decode(token),
          {:ok, token_cid} <- Token.to_cid(ucan, :blake3) do
       {:ok, token_cid, %{store | data: Map.put(store.data, token_cid, token)}}
     end
   end
 
-  def read(store, cid) do
+  def read(store, cid) when is_binary(cid) do
     if Map.has_key?(store.data, cid) do
       {:ok, store.data[cid]}
     else
