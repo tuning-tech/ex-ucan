@@ -9,9 +9,9 @@ defmodule BuilderTest do
   use ExUnit.Case
 
   setup do
-    keypair = Ucan.create_default_keypair()
-    bob_keypair = Ucan.create_default_keypair()
-    mallory_keypair = Ucan.create_default_keypair()
+    keypair = Ucan.create_default_keymaterial()
+    bob_keypair = Ucan.create_default_keymaterial()
+    mallory_keypair = Ucan.create_default_keymaterial()
 
     %{keypair: keypair, bob_keypair: bob_keypair, mallory_keypair: mallory_keypair}
   end

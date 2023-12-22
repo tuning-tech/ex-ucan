@@ -2,9 +2,11 @@ defmodule Ucan do
   @moduledoc """
   Documentation for `Ucan`.
   """
+  alias Ucan.Keymaterial
+  alias Ucan.DidParser
+  alias Ucan.Keymaterial.Ed25519
   alias Ucan.Capabilities
   alias Ucan.Token
-  alias Ucan.Keymaterial.Ed25519.Keypair
 
   alias Ucan.UcanHeader
   alias Ucan.UcanPayload
@@ -25,25 +27,33 @@ defmodule Ucan do
   defstruct [:header, :payload, :signed_data, :signature]
 
   @doc """
-  Creates a default keypair with EdDSA algorithm
+  Creates a default DidParser which has a default support for
+  ed25519 `Keymaterial.t()` implementation
 
-  This keypair can be later used for create UCAN tokens
-  Keypair generated with different algorithms like RSA will be coming soon..
+  Keymaterial generated with different algorithms like RSA will be coming soon..
   """
-  @spec create_default_keypair :: Keypair.t()
-  def create_default_keypair do
-    Keypair.create()
+  @spec create_default_did_parser :: DidParser.t()
+  def create_default_did_parser do
+    DidParser.new(DidParser.get_default_constructors())
   end
 
   @doc """
-   Signs the payload with keypair and returns a UCAN struct
+  Creates a default Keymaterial implementation of Ed25519 algorithm
+  """
+  @spec create_default_keymaterial :: Keymaterial.t()
+  def create_default_keymaterial do
+    Ed25519.create()
+  end
+
+  @doc """
+   Signs the payload with Keymaterial and returns a UCAN struct
 
   - payload - Ucan payload type
-  - keypair - A Keymaterial implemented struct
+  - Keymaterial - A Keymaterial implemented struct
   """
-  @spec sign(payload :: UcanPayload.t(), keypair :: struct()) :: __MODULE__.t()
-  def sign(payload, keypair) do
-    Token.sign_with_payload(payload, keypair)
+  @spec sign(payload :: UcanPayload.t(), Keymaterial.t()) :: __MODULE__.t()
+  def sign(payload, keymaterial) do
+    Token.sign_with_payload(payload, keymaterial)
   end
 
   @doc """
@@ -59,9 +69,9 @@ defmodule Ucan do
 
   - token - Ucan token | encoded jwt token
   """
-  @spec validate(String.t() | __MODULE__.t()) :: :ok | {:error, String.t()}
-  def validate(token) do
-    Token.validate(token)
+  @spec validate(String.t() | __MODULE__.t(), DidParser.t()) :: :ok | {:error, String.t()}
+  def validate(token, did_parser) do
+    Token.validate(token, did_parser)
   end
 
   # TODO: docs

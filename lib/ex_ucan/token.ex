@@ -2,14 +2,13 @@ defmodule Ucan.Token do
   @moduledoc """
   Core functions for the creation and management of UCAN tokens
   """
+  alias Ucan.DidParser
   alias Ucan.Builder
   alias Ucan.Capabilities
   alias Ucan.UcanHeader
   alias Ucan.UcanPayload
   alias Ucan.Utils
   alias Ucan.Keymaterial
-  alias Ucan.Keymaterial.Ed25519.Crypto
-  alias Ucan.Keymaterial.Ed25519.Keypair
 
   @token_type "JWT"
   @version %{major: 0, minor: 10, patch: 0}
@@ -79,15 +78,15 @@ defmodule Ucan.Token do
 
   - encoded_token - Ucan token
   """
-  @spec validate(String.t() | Ucan.t()) :: :ok | {:error, String.t() | map()}
-  def validate(ucan) when is_binary(ucan) do
+  @spec validate(String.t() | Ucan.t(), DidParser.t()) :: :ok | {:error, String.t() | map()}
+  def validate(ucan, %DidParser{} = did_parser) when is_binary(ucan) do
     with {:ok, {_header, payload}} <- parse_encoded_ucan(ucan),
          {false, _} <- {is_expired?(payload), :expired},
          {false, _} <- {is_too_early?(payload), :early} do
       [encoded_header, encoded_payload, encoded_sign] = String.split(ucan, ".")
       {:ok, signature} = Base.url_decode64(encoded_sign, padding: false)
       data = "#{encoded_header}.#{encoded_payload}"
-      verify_signature(payload.iss, data, signature)
+      verify_signature(payload.iss, data, signature, did_parser)
     else
       {true, :expired} -> {:error, "Ucan token is already expired"}
       {true, :early} -> {:error, "Ucan token is not yet active"}
@@ -95,11 +94,11 @@ defmodule Ucan.Token do
     end
   end
 
-  def validate(%Ucan{} = ucan) do
+  def validate(%Ucan{} = ucan, %DidParser{} = did_parser) do
     with {false, _} <- {is_expired?(ucan.payload), :expired},
          {false, _} <- {is_too_early?(ucan.payload), :early} do
       {:ok, signature} = Base.url_decode64(ucan.signature, padding: false)
-      verify_signature(ucan.payload.iss, ucan.signed_data, signature)
+      verify_signature(ucan.payload.iss, ucan.signed_data, signature, did_parser)
     else
       {true, :expired} -> {:error, "Ucan is already expired"}
       {true, :early} -> {:error, "Ucan is not yet active"}
@@ -201,10 +200,11 @@ defmodule Ucan.Token do
     end
   end
 
-  @spec verify_signature(String.t(), String.t(), String.t()) :: :ok | {:error, String.t()}
-  defp verify_signature(did, data, signature) do
-    with {:ok, public_key} <- Crypto.did_to_publickey(did),
-         true <- :public_key.verify(data, :ignored, signature, {:ed_pub, :ed25519, public_key}) do
+  @spec verify_signature(String.t(), String.t(), String.t(), DidParser.t()) ::
+          :ok | {:error, String.t()}
+  defp verify_signature(issuer, data, signature, %DidParser{} = did_parser) do
+    with {:ok, pub_key, keymaterial} <- DidParser.parse(did_parser, issuer),
+         true <- Keymaterial.verify(keymaterial, pub_key, data, signature) do
       :ok
     else
       false -> {:error, "Failed to verify signature, check the params and try again"}

@@ -1,4 +1,5 @@
 defmodule AttenuationTest do
+  alias Ucan.DidParser
   alias Ucan.CapabilityInfo
   alias Ucan.Capability
   alias Ucan.ProofChains
@@ -9,11 +10,18 @@ defmodule AttenuationTest do
   use ExUnit.Case
 
   setup do
-    keypair = Ucan.create_default_keypair()
-    bob_keypair = Ucan.create_default_keypair()
-    mallory_keypair = Ucan.create_default_keypair()
+    keypair = Ucan.create_default_keymaterial()
+    bob_keypair = Ucan.create_default_keymaterial()
+    mallory_keypair = Ucan.create_default_keymaterial()
 
-    %{alice_keypair: keypair, bob_keypair: bob_keypair, mallory_keypair: mallory_keypair}
+    did_parser = DidParser.new(DidParser.get_default_constructors())
+
+    %{
+      alice_keypair: keypair,
+      bob_keypair: bob_keypair,
+      mallory_keypair: mallory_keypair,
+      did_parser: did_parser
+    }
   end
 
   @tag :atten
@@ -47,7 +55,7 @@ defmodule AttenuationTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:ok, prf_chain} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store, meta.did_parser)
 
     assert [_ | _] =
              capability_infos =
@@ -90,7 +98,7 @@ defmodule AttenuationTest do
     {:ok, _cid, store} = UcanStore.write(%MemoryStoreJwt{}, Ucan.encode(leaf_ucan))
 
     assert {:ok, prf_chain} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store, meta.did_parser)
 
     assert [_ | _] =
              capability_infos =
@@ -147,7 +155,7 @@ defmodule AttenuationTest do
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_bob))
 
     assert {:ok, prf_chain} =
-             ProofChains.from_token_string(Ucan.encode(ucan), store)
+             ProofChains.from_token_string(Ucan.encode(ucan), store, meta.did_parser)
 
     assert [_ | _] =
              capability_infos =
@@ -216,7 +224,7 @@ defmodule AttenuationTest do
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_bob))
 
     assert {:ok, prf_chain} =
-             ProofChains.from_token_string(Ucan.encode(ucan), store)
+             ProofChains.from_token_string(Ucan.encode(ucan), store, meta.did_parser)
 
     assert [_ | _] =
              capability_infos =
@@ -277,7 +285,7 @@ defmodule AttenuationTest do
     {:ok, _cid, store} = UcanStore.write(store, Ucan.encode(leaf_ucan_bob))
 
     assert {:ok, prf_chain} =
-             ProofChains.from_token_string(Ucan.encode(ucan), store)
+             ProofChains.from_token_string(Ucan.encode(ucan), store, meta.did_parser)
 
     assert [_ | _] =
              capability_infos =
@@ -333,7 +341,7 @@ defmodule AttenuationTest do
 
     # |> IO.inspect()
     assert {:ok, prf_chain} =
-             ProofChains.from_token_string(Ucan.encode(delegated_token), store)
+             ProofChains.from_token_string(Ucan.encode(delegated_token), store, meta.did_parser)
 
     # |> IO.inspect()
     assert [_ | _] =
@@ -395,8 +403,13 @@ defmodule AttenuationTest do
 
   @spec test_capabilities_delegation(list(Capability), list(Capability)) :: boolean()
   defp test_capabilities_delegation(proof_capabilities, delegated_capabilities) do
-    alice_keypair = Ucan.create_default_keypair()
-    mallory_keypair = Ucan.create_default_keypair()
+    alice_keypair = Ucan.create_default_keymaterial()
+    mallory_keypair = Ucan.create_default_keymaterial()
+
+    did_parser =
+      DidParser.new([
+        {Keymaterial.get_magic_bytes(alice_keypair), alice_keypair}
+      ])
 
     email_semantics = %EmailSemantics{}
 
@@ -424,7 +437,7 @@ defmodule AttenuationTest do
 
     # |> IO.inspect()
     assert {:ok, prf_chain} =
-             ProofChains.from_ucan(ucan, store)
+             ProofChains.from_ucan(ucan, store, did_parser)
 
     enable_capabilities(
       prf_chain,
