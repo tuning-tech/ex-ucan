@@ -4,13 +4,16 @@ defmodule ExUcan.MixProject do
   def project do
     [
       app: :ucan,
-      version: "0.1.0",
+      version: "0.10.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
       consolidate_protocols: Mix.env() != :test,
       elixirc_paths: elixirc_paths(Mix.env()),
+      description: """
+        Elixir implementation of UCANs
+      """,
       test_coverage: [
         summary: [
           threshold: 80
@@ -38,7 +41,8 @@ defmodule ExUcan.MixProject do
           Ucan.WnfsScope,
           Ucan.WnfsSemantics
         ]
-      ]
+      ],
+      source_url: "https://github.com/tuning-tech/ex-ucan"
     ]
   end
 

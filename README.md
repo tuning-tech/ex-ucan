@@ -74,7 +74,7 @@ Peer-to-peer
 ```elixir
 def deps do
   [
-    {:ucan, git: "https://github.com/tuning-tech/ex-ucan.git"}
+    {:ucan, "~> 0.10.0"}
   ]
 end
 ```
