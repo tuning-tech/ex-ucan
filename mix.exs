@@ -42,7 +42,8 @@ defmodule ExUcan.MixProject do
           Ucan.WnfsSemantics
         ]
       ],
-      source_url: "https://github.com/tuning-tech/ex-ucan"
+      source_url: "https://github.com/tuning-tech/ex-ucan",
+      package: package()
     ]
   end
 
@@ -65,6 +66,13 @@ defmodule ExUcan.MixProject do
       {:excid, git: "https://github.com/madclaws/cid.git"},
       {:ex_ipfs_ipld, "~> 1.0"},
       {:ex_doc, "~> 0.16", only: :dev, runtime: false}
+    ]
+  end
+
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/tuning-tech/ex-ucan"}
     ]
   end
 
