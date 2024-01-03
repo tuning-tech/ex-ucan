@@ -9,6 +9,17 @@ defprotocol Ucan.Keymaterial do
   `get_did/1`, `sign/2` and `verify/3`
   """
 
+  @typedoc """
+  This protocol must be implemented by a struct that encapsulates cryptographic
+  keypair data. The protocol represent the minimum required API capability for
+  producing a signed UCAN from a cryptographic keypair, and verifying such
+  signatures.
+
+  This protocol requires 6 functions to be implemented, `get_jwt_algorithm_name/1`,
+  `get_did/1`, `sign/2`, `verify/3`, `get_magic_bytes/1` and `get_pub_key/1`
+  """
+  @type t :: term()
+
   @doc """
   Returns the Jwt algorithm used by the Keypair to create Ucan
   """
@@ -16,7 +27,7 @@ defprotocol Ucan.Keymaterial do
   def get_jwt_algorithm_name(keymaterial)
 
   @doc """
-  Retursn the did (Decentralized Identifiers) generated using the keypair
+  Returns the did (Decentralized Identifiers) generated using the keypair
   """
   @spec get_did(t()) :: String.t()
   def get_did(keymaterial)
