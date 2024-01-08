@@ -33,7 +33,7 @@ defimpl UcanStore, for: MemoryStoreJwt do
 
   def write(store, token) when is_binary(token) do
     with {:ok, ucan} <- Token.decode(token),
-         {:ok, token_cid} <- Token.to_cid(ucan, :blake3) do
+         {:ok, token_cid} <- Token.to_cid(ucan, :sha2_256) do
       {:ok, token_cid, %{store | data: Map.put(store.data, token_cid, token)}}
     end
   end

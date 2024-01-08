@@ -134,7 +134,7 @@ defmodule Ucan.Builder do
   algorithm, unless one is provided.
   """
   @spec witnessed_by(__MODULE__.t(), Ucan.t(), hash_type()) :: __MODULE__.t()
-  def witnessed_by(builder, authority_ucan, hash_type \\ :blake3)
+  def witnessed_by(builder, authority_ucan, hash_type \\ :sha2_256)
 
   def witnessed_by(%__MODULE__{} = builder, %Ucan{} = authority_ucan, hash_type) do
     case Token.to_cid(authority_ucan, hash_type) do
@@ -174,7 +174,7 @@ defmodule Ucan.Builder do
   algorithm, unless one is provided.
   """
   @spec delegating_from(__MODULE__.t(), Ucan.t(), hash_type()) :: __MODULE__.t()
-  def delegating_from(builder, authority_ucan, hash_type \\ :blake3) do
+  def delegating_from(builder, authority_ucan, hash_type \\ :sha2_256) do
     case Token.to_cid(%Ucan{} = authority_ucan, hash_type) do
       {:ok, cid} ->
         builder = %{builder | proofs: [cid | builder.proofs]}

@@ -272,7 +272,7 @@ defmodule BuilderTest do
       |> Builder.build!()
       |> Ucan.sign(meta.keypair)
 
-    assert next_ucan.payload.prf == [Token.to_cid!(ucan, :blake3)]
+    assert next_ucan.payload.prf == [Token.to_cid!(ucan, :sha2_256)]
   end
 
   @tag :delegate_2
