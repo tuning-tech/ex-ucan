@@ -81,8 +81,8 @@ defmodule Ucan.Token do
   @spec validate(String.t() | Ucan.t(), DidParser.t()) :: :ok | {:error, String.t() | map()}
   def validate(ucan, %DidParser{} = did_parser) when is_binary(ucan) do
     with {:ok, {_header, payload}} <- parse_encoded_ucan(ucan),
-         {false, _} <- {is_expired?(payload), :expired},
-         {false, _} <- {is_too_early?(payload), :early} do
+         {false, _} <- {expired?(payload), :expired},
+         {false, _} <- {too_early?(payload), :early} do
       [encoded_header, encoded_payload, encoded_sign] = String.split(ucan, ".")
       {:ok, signature} = Base.url_decode64(encoded_sign, padding: false)
       data = "#{encoded_header}.#{encoded_payload}"
@@ -94,8 +94,8 @@ defmodule Ucan.Token do
   end
 
   def validate(%Ucan{} = ucan, %DidParser{} = did_parser) do
-    with {false, _} <- {is_expired?(ucan.payload), :expired},
-         {false, _} <- {is_too_early?(ucan.payload), :early} do
+    with {false, _} <- {expired?(ucan.payload), :expired},
+         {false, _} <- {too_early?(ucan.payload), :early} do
       {:ok, signature} = Base.url_decode64(ucan.signature, padding: false)
       verify_signature(ucan.payload.iss, ucan.signed_data, signature, did_parser)
     else
@@ -158,15 +158,15 @@ defmodule Ucan.Token do
     |> Base.url_encode64(padding: false)
   end
 
-  @spec is_expired?(UcanPayload.t()) :: boolean()
-  defp is_expired?(%UcanPayload{} = ucan_payload) do
+  @spec expired?(UcanPayload.t()) :: boolean()
+  defp expired?(%UcanPayload{} = ucan_payload) do
     ucan_payload.exp < DateTime.utc_now() |> DateTime.to_unix()
   end
 
-  @spec is_too_early?(UcanPayload.t()) :: boolean()
-  defp is_too_early?(%UcanPayload{nbf: nil}), do: false
+  @spec too_early?(UcanPayload.t()) :: boolean()
+  defp too_early?(%UcanPayload{nbf: nil}), do: false
 
-  defp is_too_early?(%UcanPayload{nbf: nbf}) do
+  defp too_early?(%UcanPayload{nbf: nbf}) do
     nbf > DateTime.utc_now() |> DateTime.to_unix()
   end
 
