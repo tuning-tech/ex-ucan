@@ -82,6 +82,9 @@ defmodule Ucan.DidParser do
   """
   @spec publickey_to_did(pubkey :: binary(), magic_bytes :: binary()) :: String.t()
   def publickey_to_did(pubkey, magic_bytes) do
+    IO.inspect(pubkey, label: :pubkey)
+    IO.inspect(magic_bytes, label: :magic_bytes)
+
     bytes = <<magic_bytes::binary, pubkey::binary>>
     base58key = Base58.encode(bytes)
     @base58_did_prefix <> base58key
