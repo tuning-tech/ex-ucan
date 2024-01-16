@@ -44,4 +44,43 @@ defmodule Ucan.Keymaterial.P256 do
     |> Map.put(:secret_key, priv)
   end
 
+  defimpl Keymaterial do
+    alias Ucan.DidParser
+    alias Ucan.Keymaterial.P256
+
+    def get_jwt_algorithm_name(%P256{} = keymaterial) do
+      keymaterial.jwt_alg
+    end
+
+    def get_did(%P256{} = keymaterial) do
+      DidParser.publickey_to_did(keymaterial.public_key, keymaterial.magic_bytes)
+    end
+
+    def sign(%P256{} = keymaterial, payload) do
+      :public_key.sign(
+        payload,
+        :ignored,
+        {:ed_pri, :ed25519, keymaterial.public_key, keymaterial.secret_key},
+        []
+      )
+    end
+
+    # We don't use the keymaterial obj's pubkey, we use the passed pub_key.
+    def verify(%P256{}, pub_key, payload, signature) do
+      :public_key.verify(
+        payload,
+        :ignored,
+        signature,
+        {:ed_pub, :ed25519, pub_key}
+      )
+    end
+
+    def get_magic_bytes(%P256{} = keymaterial) do
+      keymaterial.magic_bytes
+    end
+
+    def get_pub_key(%P256{} = keymaterial) do
+      keymaterial.public_key
+    end
+  end
 end
