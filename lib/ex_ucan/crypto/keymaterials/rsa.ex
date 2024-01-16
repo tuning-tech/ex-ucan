@@ -1,10 +1,27 @@
 defmodule Ucan.Keymaterial.Rsa do
   @moduledoc """
   Implements `Keymaterial` protocol for RSA Algorithm
+
+  More on RSA for devs
+  https://cryptobook.nakov.com/asymmetric-key-ciphers/the-rsa-cryptosystem-concepts
+
+  Records -> erlang records are tuples
+
+  What is ASN1/ASN.1?
+  syntax for encoding and decoding RSA (any DS) in a standardized way
+
+  TODO
+  - cross check with rs-ucan, regarding the pkcs1 and pkcs8
+  - also cross check the der conversion
+  - option of 4096 bits rsa creation
+  - tests
+  - asn1 tests
   """
 
   alias Ucan.Keymaterial
+  import Ucan.Crypto.Asn1
 
+  @exponent 65537
   @typedoc """
   A Keypair struct holds the generate keypairs and its metadata
 
@@ -30,26 +47,13 @@ defmodule Ucan.Keymaterial.Rsa do
   """
   @spec create :: t()
   def create do
-    # {pub, priv} = :crypto.generate_key(:rsa, {4096, 65537})
-
-    {:RSAPrivateKey, _, modulus, publicExponent, _, _, _, _exponent1, _, _, _otherPrimeInfos} =
-      rsa_private_key = :public_key.generate_key({:rsa, 2048, 65537})
-
-    rsa_public_key = {:RSAPublicKey, modulus, publicExponent}
-
-    private_key =
-      [:public_key.pem_entry_encode(:RSAPrivateKey, rsa_private_key)]
-      |> :public_key.pem_encode()
-
-    public_key =
-      [:public_key.pem_entry_encode(:RSAPublicKey, rsa_public_key)]
-      |> :public_key.pem_encode()
-
-    {private_key, public_key}
+    private_key = :public_key.generate_key({:rsa, 2048, @exponent})
+    rsa_private_key(modulus: mod, publicExponent: e) = private_key
+    public_key = rsa_public_key(modulus: mod, publicExponent: e)
 
     %__MODULE__{}
     |> Map.put(:secret_key, private_key)
-    |> Map.put(:public_key,  public_key)
+    |> Map.put(:public_key, public_key)
   end
 
   defimpl Keymaterial do
@@ -60,16 +64,17 @@ defmodule Ucan.Keymaterial.Rsa do
       keymaterial.jwt_alg
     end
 
-    def get_did(%Rsa{} = keymaterial) do
-      DidParser.publickey_to_did(keymaterial.public_key, keymaterial.magic_bytes)
+    # prolly need to conver to binary format before calcing did
+    def get_did(%Rsa{public_key: pub} = keymaterial) do
+      :public_key.der_encode(:RSAPublicKey, pub)
+      |> DidParser.publickey_to_did(keymaterial.magic_bytes)
     end
 
     def sign(%Rsa{} = keymaterial, payload) do
       :public_key.sign(
         payload,
-        :ignored,
-        {:ed_pri, :Rsa, keymaterial.public_key, keymaterial.secret_key},
-        []
+        :sha256,
+        keymaterial.secret_key
       )
     end
 
@@ -77,9 +82,9 @@ defmodule Ucan.Keymaterial.Rsa do
     def verify(%Rsa{}, pub_key, payload, signature) do
       :public_key.verify(
         payload,
-        :ignored,
+        :sha256,
         signature,
-        {:ed_pub, :Rsa, pub_key}
+        pub_key
       )
     end
 

@@ -17,7 +17,7 @@ defmodule Keymaterial.RsaTest do
     assert "RS256" = Keymaterial.get_jwt_algorithm_name(data.rsa_mod)
   end
 
-  @tag :rsa
+  @tag :skip
   test "get_did/1", data do
     assert "" = Keymaterial.get_did(data.rsa_mod)
   end

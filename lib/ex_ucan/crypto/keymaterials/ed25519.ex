@@ -31,9 +31,10 @@ defmodule Ucan.Keymaterial.Ed25519 do
   @spec create :: t()
   def create do
     {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
+
     %__MODULE__{}
     |> Map.put(:secret_key, priv)
-    |> Map.put(:public_key,  pub)
+    |> Map.put(:public_key, pub)
   end
 
   defimpl Keymaterial do
