@@ -19,8 +19,9 @@ defmodule Ucan.Keymaterial.Ed25519 do
           magic_bytes: binary()
         }
 
+  # https://github.com/multiformats/multicodec/blob/e9ecf587558964715054a0afcc01f7ace220952c/table.csv#L94 */
   @derive [Jason.Encoder, {Inspect, only: [:jwt_alg, :public_key, :magic_bytes]}]
-  defstruct [:jwt_alg, :secret_key, :public_key, magic_bytes: <<0xED, 0x01>>]
+  defstruct [:secret_key, :public_key, jwt_alg: "EdDSA", magic_bytes: <<0xED, 0x01>>]
 
   @doc """
   Creates a keypair with EdDSA algorithm
@@ -31,13 +32,9 @@ defmodule Ucan.Keymaterial.Ed25519 do
   def create do
     {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
 
-    %__MODULE__{
-      jwt_alg: "EdDSA",
-      secret_key: priv,
-      public_key: pub,
-      # https://github.com/multiformats/multicodec/blob/e9ecf587558964715054a0afcc01f7ace220952c/table.csv#L94 */
-      magic_bytes: <<0xED, 0x01>>
-    }
+    %__MODULE__{}
+    |> Map.put(:secret_key, priv)
+    |> Map.put(:public_key, pub)
   end
 
   defimpl Keymaterial do
