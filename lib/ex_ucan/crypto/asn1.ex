@@ -6,7 +6,7 @@ defmodule Ucan.Crypto.Asn1 do
   for serializing and deserializing.
 
   In case of RSA and ECDSA we use x509 standard
-  x509 defineds the format of public key cetificates
+  x509 defines the format of public key cetificates
   """
   require Record
 

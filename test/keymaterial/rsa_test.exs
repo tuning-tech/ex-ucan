@@ -7,18 +7,21 @@ defmodule Keymaterial.RsaTest do
   alias Ucan.Keymaterial
   alias Ucan.Keymaterial.Rsa
 
-  setup do
-    %Rsa{} = rsa = Rsa.create()
-    {:ok, rsa_mod: rsa}
+  @tag :rsa
+  test "creating RSA keymaterial, 2048 bit size" do
+    rsa = %Rsa{} = Rsa.create()
+    assert "RS256" = Keymaterial.get_jwt_algorithm_name(rsa)
+    assert "did:key:z4MX" <> _ = Keymaterial.get_did(rsa)
+    payload_signature = Keymaterial.sign(rsa, "hello world")
+    assert Keymaterial.verify(rsa, rsa.public_key, "hello world", payload_signature)
   end
 
   @tag :rsa
-  test "get_jwt_algorithm_name/1", data do
-    assert "RS256" = Keymaterial.get_jwt_algorithm_name(data.rsa_mod)
-  end
-
-  @tag :skip
-  test "get_did/1", data do
-    assert "" = Keymaterial.get_did(data.rsa_mod)
+  test "creating RSA keymaterial, 4096 bit size" do
+    rsa = %Rsa{} = Rsa.create(4096)
+    assert "RS256" = Keymaterial.get_jwt_algorithm_name(rsa)
+    assert "did:key:zgg" <> _ = Keymaterial.get_did(rsa)
+    payload_signature = Keymaterial.sign(rsa, "hello world")
+    assert Keymaterial.verify(rsa, rsa.public_key, "hello world", payload_signature)
   end
 end

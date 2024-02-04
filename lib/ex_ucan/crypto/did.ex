@@ -4,6 +4,7 @@ defmodule Ucan.DidParser do
   """
   alias Ucan.Keymaterial
   alias Ucan.Keymaterial.Ed25519
+  alias Ucan.Keymaterial.Rsa
 
   # z is the multibase prefix for base58btc byte encoding
   @base58_did_prefix "did:key:z"
@@ -82,7 +83,6 @@ defmodule Ucan.DidParser do
   """
   @spec publickey_to_did(pubkey :: binary(), magic_bytes :: binary()) :: String.t()
   def publickey_to_did(pubkey, magic_bytes) do
-    IO.inspect(magic_bytes)
     bytes = <<magic_bytes::binary, pubkey::binary>>
     base58key = Base58.encode(bytes)
     @base58_did_prefix <> base58key
@@ -91,7 +91,8 @@ defmodule Ucan.DidParser do
   @spec get_default_constructors :: list(key_constructor())
   def get_default_constructors do
     [
-      {Keymaterial.get_magic_bytes(%Ed25519{}), %Ed25519{}}
+      {Keymaterial.get_magic_bytes(%Ed25519{}), %Ed25519{}},
+      {Keymaterial.get_magic_bytes(%Rsa{}), %Rsa{}}
     ]
   end
 end

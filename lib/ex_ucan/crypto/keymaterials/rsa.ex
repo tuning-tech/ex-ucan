@@ -9,19 +9,12 @@ defmodule Ucan.Keymaterial.Rsa do
 
   What is ASN1/ASN.1?
   syntax for encoding and decoding RSA (any DS) in a standardized way
-
-  TODO
-  - cross check with rs-ucan, regarding the pkcs1 and pkcs8
-  - also cross check the der conversion
-  - option of 4096 bits rsa creation
-  - tests
-  - asn1 tests
   """
 
   alias Ucan.Keymaterial
   import Ucan.Crypto.Asn1
 
-  @exponent 65537
+  @exponent 65_537
   @typedoc """
   A Keypair struct holds the generate keypairs and its metadata
 
@@ -33,21 +26,24 @@ defmodule Ucan.Keymaterial.Rsa do
           jwt_alg: String.t(),
           secret_key: binary(),
           public_key: binary(),
-          magic_bytes: binary()
+          magic_bytes: binary(),
+          size: non_neg_integer()
         }
 
   # https://github.com/multiformats/multicodec/blob/e9ecf587558964715054a0afcc01f7ace220952c/table.csv#L146
   @derive [Jason.Encoder, {Inspect, only: [:jwt_alg, :public_key, :magic_bytes]}]
-  defstruct [:secret_key, :public_key, jwt_alg: "RS256", magic_bytes: <<0x85, 0x24>>]
+  defstruct [:secret_key, :public_key, jwt_alg: "RS256", magic_bytes: <<0x85, 0x24>>, size: 2048]
 
   @doc """
   Creates a keypair with RSA algorithm (2048 bits)
 
   This keypair can be later used for create UCAN tokens
   """
-  @spec create :: t()
-  def create do
-    private_key = :public_key.generate_key({:rsa, 2048, @exponent})
+  @spec create(size :: non_neg_integer()) :: t()
+  def create(size \\ 2048)
+
+  def create(size) do
+    private_key = :public_key.generate_key({:rsa, size, @exponent})
     rsa_private_key(modulus: mod, publicExponent: e) = private_key
     public_key = rsa_public_key(modulus: mod, publicExponent: e)
 
