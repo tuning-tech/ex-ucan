@@ -4,6 +4,7 @@ defmodule Ucan.Keymaterial.P256 do
   """
 
   alias Ucan.Keymaterial
+  import Ucan.Crypto.Asn1
 
   @typedoc """
   A Keypair struct holds the generate keypairs and its metadata
@@ -19,8 +20,7 @@ defmodule Ucan.Keymaterial.P256 do
           magic_bytes: binary()
         }
 
-
-  @derive [Jason.Encoder, {Inspect, only: [:jwt_alg, :public_key, :magic_bytes]}]
+  # @derive [Jason.Encoder, {Inspect, only: [:jwt_alg, :public_key, :magic_bytes]}]
   defstruct [:secret_key, :public_key, jwt_alg: "ES256", magic_bytes: <<0x80, 0x24>>]
 
   @doc """
@@ -38,10 +38,13 @@ defmodule Ucan.Keymaterial.P256 do
   """
   @spec create :: t()
   def create do
-    {pub, priv} = :crypto.generate_key(:eddsa, :ed25519)
+    private_key = :public_key.generate_key({:namedCurve, :secp256r1})
+    ec_private_key(parameters: params, publicKey: pub) = private_key
+    public_key = {ec_point(point: pub), params}
+
     %__MODULE__{}
-    |> Map.put(:public_key, pub)
-    |> Map.put(:secret_key, priv)
+    |> Map.put(:public_key, public_key)
+    |> Map.put(:secret_key, private_key)
   end
 
   defimpl Keymaterial do
@@ -53,7 +56,13 @@ defmodule Ucan.Keymaterial.P256 do
     end
 
     def get_did(%P256{} = keymaterial) do
-      DidParser.publickey_to_did(keymaterial.public_key, keymaterial.magic_bytes)
+      {{:ECPoint, pub}, _} = keymaterial.public_key
+
+      # ec_point(point: pub) = keymaterial.public_key
+      # pub = :public_key.der_encode(:ECPoint, pub)
+      # 'OTP-PUB-KEY':encode(:ECPoint, keymaterial.public_key)
+      # TODO: struggling to convert the public key to der_encode binary :((
+      DidParser.publickey_to_did(pub, keymaterial.magic_bytes)
     end
 
     def sign(%P256{} = keymaterial, payload) do
